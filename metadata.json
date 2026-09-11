@@ -2,5 +2,7 @@
   "name": "Raghavendra Illale - Workstation OS",
   "description": "Developer Workstation OS & Portfolio for Raghavendra Illale, Applied AI & Backend Systems Engineer",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
