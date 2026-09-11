@@ -9,7 +9,7 @@ interface DefenseProps {
 export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) => {
   const [activeStageId, setActiveStageId] = useState<number>(5);
   const [logText, setLogText] = useState<string>(
-    '[STAGE 05/05] SHA-256 Checksum: 0x9AFE12 matches master ADE-DRDO flight firmware. 100% BITWISE PASS.'
+    '[STAGE 05/05] SHA-256 Checksum: 0x9AFE12 matches master LTTS flight firmware. 100% BITWISE PASS.'
   );
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
 
@@ -47,7 +47,7 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
 
     setTimeout(() => {
       setActiveStageId(5);
-      setLogText('[STAGE 05/05] SHA-256 Checksum: 0x9AFE12 matches master ADE-DRDO flight firmware. 100% BITWISE PASS.');
+      setLogText('[STAGE 05/05] SHA-256 Checksum: 0x9AFE12 matches master LTTS flight firmware. 100% BITWISE PASS.');
       setIsSimulating(false);
       onShowToast('Flight Pipeline Execution PASSED (100%)');
     }, 2800);
@@ -73,7 +73,7 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
               </span>
             </div>
             <p className="font-mono text-xs text-[#06b6d4] mt-0.5">
-              Software Engineer • Client: ADE - DRDO (Aeronautical Development Establishment)
+              Software Engineer • L&amp;T Technology Services (LTTS)
             </p>
           </div>
         </div>

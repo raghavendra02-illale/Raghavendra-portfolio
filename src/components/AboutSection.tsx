@@ -17,15 +17,15 @@ export const AboutSection: React.FC<AboutProps> = ({
       id="about"
       className="w-full glass-card rounded-2xl p-6 sm:p-8 border border-[#1e293b] shadow-2xl relative overflow-hidden scroll-mt-24"
     >
-      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-        <div className="flex flex-col gap-3 max-w-2xl">
+      <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+        <div className="flex-1 flex flex-col gap-3 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/30 text-[#10b981] font-mono text-xs font-semibold flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]" />
               </span>
-              ACTIVE AEROSPACE CLIENT: ADE-DRDO
+              ORGANIZATION: LTTS
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-[#1b273e] text-[#06b6d4] font-mono text-[11px] border border-[#1e293b]">
               15K+ LOC C PRODUCTION
@@ -47,7 +47,7 @@ export const AboutSection: React.FC<AboutProps> = ({
           <p className="font-body text-sm text-[#94a3b8] leading-relaxed">
             Engineering high-assurance C/Python pipelines, deterministic validation engines, and bitwise verification frameworks at{' '}
             <strong className="text-[#f1f5f9] font-semibold">
-              L&amp;T Technology Services (Client: ADE-DRDO)
+              L&amp;T Technology Services (LTTS)
             </strong>
             . Specialized in building intelligent RAG knowledge engines, autonomous multi-agent financial systems (LangGraph / CrewAI), and resilient high-throughput backend microservices. Graduated from the prestigious{' '}
             <strong className="text-[#f1f5f9] font-semibold">
@@ -60,7 +60,7 @@ export const AboutSection: React.FC<AboutProps> = ({
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] text-[#090d16] font-mono text-xs font-bold active:scale-95 transition-all shadow-lg shadow-[#8b5cf6]/20 hover:brightness-110"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#8b5cf6] to-[#06b6d4] text-[#090d16] font-mono text-xs font-bold active:scale-95 transition-all shadow-lg shadow-[#8b5cf6]/20 hover:brightness-110 cursor-pointer"
               onClick={() => onNavigate('projects')}
             >
               <span className="material-symbols-outlined text-[18px]">layers</span>
@@ -68,15 +68,15 @@ export const AboutSection: React.FC<AboutProps> = ({
             </button>
             <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#141d2f] hover:bg-[#1b273e] text-[#06b6d4] font-mono text-xs font-bold active:scale-95 transition-all border border-[#1e293b] hover:border-[#06b6d4]/50"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#141d2f] hover:bg-[#1b273e] text-[#06b6d4] font-mono text-xs font-bold active:scale-95 transition-all border border-[#1e293b] hover:border-[#06b6d4]/50 cursor-pointer"
               onClick={() => onNavigate('defense')}
             >
               <span className="material-symbols-outlined text-[18px]">verified_user</span>
-              Inspect C Tooling (ADE-DRDO)
+              Inspect C Tooling (LTTS)
             </button>
             <button
               type="button"
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#141d2f] hover:bg-[#1b273e] text-[#f1f5f9] font-mono text-xs active:scale-95 transition-all border border-[#1e293b] hover:border-[#06b6d4]/40"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#141d2f] hover:bg-[#1b273e] text-[#f1f5f9] font-mono text-xs active:scale-95 transition-all border border-[#1e293b] hover:border-[#06b6d4]/40 cursor-pointer"
               onClick={() => onCopy('raghavendraillale@gmail.com', 'Email Address')}
             >
               <span className="material-symbols-outlined text-[17px] text-[#06b6d4]">content_copy</span>
@@ -85,8 +85,8 @@ export const AboutSection: React.FC<AboutProps> = ({
           </div>
         </div>
 
-        {/* Academic & Direct Coordinates Card */}
-        <div className="w-full lg:w-80 p-4 rounded-xl bg-[#05080e] border border-[#1e293b] flex flex-col gap-2.5 holo-card">
+        {/* Academic & Direct Coordinates Card (Side by Side) */}
+        <div className="w-full md:w-[350px] lg:w-[380px] p-4 rounded-xl bg-[#05080e] border border-[#1e293b] flex flex-col gap-2.5 holo-card shrink-0">
           <div className="flex justify-between items-center pb-2 border-b border-[#1e293b] text-[11px] font-mono">
             <span className="text-[#64748b] uppercase font-semibold">CREDENTIALS</span>
             <span className="text-[#06b6d4] font-bold">NITK SURATHKAL</span>
@@ -104,7 +104,7 @@ export const AboutSection: React.FC<AboutProps> = ({
               title="Click to copy email to clipboard"
             >
               <span className="text-[#94a3b8]">Email:</span>
-              <span className="text-[#06b6d4] font-medium truncate max-w-[170px] group-hover:underline flex items-center gap-1">
+              <span className="text-[#06b6d4] font-medium truncate max-w-[190px] group-hover:underline flex items-center gap-1">
                 raghavendraillale@gmail.com
                 <span className="material-symbols-outlined text-[13px] opacity-70">content_copy</span>
               </span>
@@ -126,7 +126,7 @@ export const AboutSection: React.FC<AboutProps> = ({
           {/* Guaranteed Direct Redirection Anchor Links */}
           <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs">
             <a
-              href="https://github.com/raghavendraillale"
+              href="https://github.com/raghavendra02-illale"
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded bg-[#141d2f] hover:bg-[#06b6d4] hover:text-[#090d16] text-[#f1f5f9] text-center active:scale-95 transition-all flex items-center justify-center gap-1.5 font-semibold cursor-pointer border border-[#1e293b]/40"
@@ -152,22 +152,25 @@ export const AboutSection: React.FC<AboutProps> = ({
             </a>
           </div>
 
-          {/* Coding Platform Badges in Credentials Card */}
+          {/* Coding Platform Badges in Credentials Card - 3 All In One Line Beside Beside */}
           <div className="pt-2 border-t border-[#1e293b]/40 flex flex-col gap-1.5">
             <div className="text-[10px] font-mono text-[#64748b] uppercase font-semibold">
               CODING PLATFORMS
             </div>
-            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
+            <div className="grid grid-cols-3 gap-1.5 font-mono text-[10px] sm:text-[11px]">
               {CODING_PROFILES.map((p) => (
                 <a
                   key={p.name}
                   href={p.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-1.5 rounded bg-[#141d2f] text-[#f1f5f9] hover:${p.color} border border-[#1e293b]/40 flex items-center justify-center gap-1 transition-all`}
+                  className={`px-1.5 py-1.5 rounded bg-[#141d2f] text-[#f1f5f9] hover:${p.color} border border-[#1e293b]/40 flex items-center justify-center gap-1 transition-all whitespace-nowrap overflow-hidden`}
                   onClick={() => onShowToast(`Opening ${p.name}...`)}
+                  title={`${p.name} Profile`}
                 >
-                  <span className={`${p.color} font-bold`}>{p.label}</span> {p.name} ↗
+                  <span className={`${p.color} font-bold shrink-0`}>{p.label}</span>
+                  <span className="truncate">{p.name}</span>
+                  <span className="shrink-0 text-[10px] opacity-80">↗</span>
                 </a>
               ))}
             </div>

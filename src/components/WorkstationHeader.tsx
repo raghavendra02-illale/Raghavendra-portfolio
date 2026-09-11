@@ -76,14 +76,14 @@ export const WorkstationHeader: React.FC<HeaderProps> = ({
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]" />
         </span>
-        <span>ADE-DRDO AEROSPACE PIPELINE: ACTIVE</span>
+        <span>LTTS AEROSPACE PIPELINE: ACTIVE</span>
       </div>
 
       {/* Quick Action Badges & Clock */}
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="hidden lg:flex items-center gap-1 font-mono text-[11px]">
           <a
-            href="https://github.com/raghavendraillale"
+            href="https://github.com/raghavendra02-illale"
             target="_blank"
             rel="noopener noreferrer"
             className="px-2 py-1 rounded bg-[#141d2f] border border-[#1e293b]/60 text-[#f1f5f9] hover:text-[#06b6d4] transition-colors flex items-center gap-1.5"

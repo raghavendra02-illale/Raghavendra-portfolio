@@ -97,7 +97,7 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
             <div className="mt-2.5 pt-2 border-t border-[#1e293b]/40 flex items-center justify-between font-mono text-[10px] text-[#64748b]">
-              <span className="truncate">CLIENT: ADE-DRDO</span>
+              <span className="truncate">ORGANIZATION: LTTS</span>
               <span className="text-[#10b981] font-bold flex items-center gap-1.5 shrink-0">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
@@ -216,7 +216,7 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
             <span>BATTERY: 100% ⚡</span>
             <span className="text-[#10b981] font-semibold flex items-center gap-1">
               <span className="w-1 h-1 rounded-full bg-[#10b981] animate-ping" />
-              ADE LINK: NOMINAL
+              LTTS LINK: NOMINAL
             </span>
           </div>
         </div>

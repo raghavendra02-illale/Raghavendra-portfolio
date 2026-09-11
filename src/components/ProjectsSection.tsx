@@ -8,6 +8,10 @@ interface ProjectsProps {
 export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
   const [filter, setFilter] = useState<'all' | 'genai' | 'aerospace' | 'cloud'>('all');
 
+  const genAiCount = PROJECTS.filter((p) => p.category === 'genai').length;
+  const aerospaceCount = PROJECTS.filter((p) => p.category === 'aerospace').length;
+  const cloudCount = PROJECTS.filter((p) => p.category === 'cloud').length;
+
   const filteredProjects = PROJECTS.filter((p) => {
     if (filter === 'all') return true;
     return p.category === filter;
@@ -42,7 +46,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             }`}
             onClick={() => handleFilterChange('all')}
           >
-            All (6)
+            All ({PROJECTS.length})
           </button>
           <button
             type="button"
@@ -53,7 +57,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             }`}
             onClick={() => handleFilterChange('genai')}
           >
-            GenAI &amp; Agents (3)
+            GenAI &amp; Agents ({genAiCount})
           </button>
           <button
             type="button"
@@ -64,7 +68,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             }`}
             onClick={() => handleFilterChange('aerospace')}
           >
-            Aerospace (ADE-DRDO)
+            Aerospace (LTTS) ({aerospaceCount})
           </button>
           <button
             type="button"
@@ -75,7 +79,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             }`}
             onClick={() => handleFilterChange('cloud')}
           >
-            Data &amp; Cloud
+            Data &amp; Cloud ({cloudCount})
           </button>
         </div>
       </div>

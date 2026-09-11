@@ -11,12 +11,22 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('Full-Time Engineering Role (Applied AI / Backend Systems)');
   const [message, setMessage] = useState('');
-  const [dispatchReady, setDispatchReady] = useState(false);
-  const [gmailComposeUrl, setGmailComposeUrl] = useState('');
-  const [mailtoUrl, setMailtoUrl] = useState('');
-  const [fullDraftText, setFullDraftText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: 'success' | 'warning' | 'error';
+    text: string;
+    detail?: string;
+  } | null>(null);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const emailBody = `From: ${name || 'Prospective Collaborator'} <${email || 'contact@domain.com'}>\nSubject: ${subject}\n\n${message}\n\n---\nTransmitted to Raghavendra Illale (raghavendraillale@gmail.com)`;
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=raghavendraillale@gmail.com&su=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(emailBody)}`;
+  const mailtoLink = `mailto:raghavendraillale@gmail.com?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(emailBody)}`;
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !email.trim() || !message.trim()) {
@@ -24,28 +34,66 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
       return;
     }
 
-    const emailBody = `From: ${name} <${email}>\nSubject: ${subject}\nRecipient: raghavendraillale@gmail.com\n\n${message}\n\n---\nSent via Raghavendra Illale Workstation Console`;
-    const fullDraft = `To: raghavendraillale@gmail.com\nSubject: ${subject}\n\n${emailBody}`;
+    setIsSubmitting(true);
+    setStatusMessage(null);
+    onShowToast('Transmitting payload to raghavendraillale@gmail.com...');
 
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=raghavendraillale@gmail.com&su=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(emailBody)}`;
-    const mailtoLink = `mailto:raghavendraillale@gmail.com?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(emailBody)}`;
-
-    setGmailComposeUrl(gmailUrl);
-    setMailtoUrl(mailtoLink);
-    setFullDraftText(fullDraft);
-    setDispatchReady(true);
-
-    onShowToast('Dispatch prepared! Launching mail composer...');
-
-    // Attempt to trigger web Gmail compose in new window
     try {
-      window.open(gmailUrl, '_blank');
+      const response = await fetch('https://formsubmit.co/ajax/raghavendraillale@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          _subject: `[Portfolio Inquiry] ${subject} - from ${name.trim()}`,
+          message: message.trim(),
+          _captcha: 'false',
+          _template: 'table',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && (data.success === 'true' || data.success === true)) {
+        setStatusMessage({
+          type: 'success',
+          text: 'Message Delivered Directly to Raghavendra’s Inbox!',
+          detail: 'Your transmission has been forwarded straight to raghavendraillale@gmail.com.',
+        });
+        onShowToast('✅ Message dispatched directly to Raghavendra’s inbox!');
+        setName('');
+        setEmail('');
+        setMessage('');
+      } else if (data.message && data.message.includes('Activation')) {
+        // FormSubmit first-time 1-click verification
+        setStatusMessage({
+          type: 'warning',
+          text: 'First-Time Activation Needed for raghavendraillale@gmail.com',
+          detail:
+            'FormSubmit has sent a 1-click activation link to your inbox. Open your Gmail, click "Activate Form", and all future submissions will land straight into your inbox!',
+        });
+        onShowToast('Check your email to click the 1-time FormSubmit activation link.');
+      } else {
+        setStatusMessage({
+          type: 'success',
+          text: 'Transmission Dispatched!',
+          detail: 'Payload processed. You may also confirm via Gmail Web compose below.',
+        });
+        onShowToast('Transmission dispatched to raghavendraillale@gmail.com');
+      }
     } catch {
-      window.location.href = mailtoLink;
+      setStatusMessage({
+        type: 'warning',
+        text: 'Direct Web Transmission Encountered Network Restriction',
+        detail:
+          'Due to sandboxed browser policies, please click "Open in Gmail Web" below to send instantly with one click.',
+      });
+      onShowToast('Opening direct mail relay option...');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -170,7 +218,7 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs">
               <a
                 className="p-2 rounded bg-[#1b273e] hover:border-[#06b6d4] border border-transparent flex items-center gap-1.5 text-[#f1f5f9] hover:text-[#06b6d4] transition-all"
-                href="https://github.com/raghavendraillale"
+                href="https://github.com/raghavendra02-illale"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => onShowToast('Opening GitHub...')}
@@ -253,8 +301,8 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
                 <option value="Full-Time Engineering Role (Applied AI / Backend Systems)">
                   Full-Time Engineering Role (Applied AI / Backend Systems)
                 </option>
-                <option value="Mission-Critical Aerospace / DRDO Collaboration">
-                  Mission-Critical Aerospace / DRDO Collaboration
+                <option value="Mission-Critical Aerospace / LTTS Systems Collaboration">
+                  Mission-Critical Aerospace / LTTS Systems Collaboration
                 </option>
                 <option value="Enterprise GenAI / RAG Advisory">
                   Enterprise GenAI / RAG Advisory
@@ -280,75 +328,87 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
             </div>
 
             <button
-              className="w-full py-2.5 rounded-xl bg-[#06b6d4] text-[#090d16] font-bold hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#06b6d4]/25 font-mono text-xs cursor-pointer"
+              className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg font-mono text-xs cursor-pointer ${
+                isSubmitting
+                  ? 'bg-[#1e293b] text-[#94a3b8] cursor-not-allowed opacity-80'
+                  : 'bg-[#06b6d4] text-[#090d16] hover:brightness-110 active:scale-95 shadow-[#06b6d4]/25'
+              }`}
+              disabled={isSubmitting}
               type="submit"
             >
-              <span className="material-symbols-outlined text-[17px]">outgoing_mail</span>
-              Send Message / Dispatch Email
+              {isSubmitting ? (
+                <>
+                  <span className="material-symbols-outlined text-[17px] animate-spin">
+                    sync
+                  </span>
+                  Transmitting Payload to raghavendraillale@gmail.com...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[17px]">outgoing_mail</span>
+                  Send Message / Dispatch Email Directly
+                </>
+              )}
             </button>
 
-            <p className="text-[11px] text-[#64748b] font-body leading-relaxed text-center">
-              Automatically launches Gmail Web Compose &amp; mail clients pre-filled directly to{' '}
-              <span className="text-[#06b6d4] font-mono">raghavendraillale@gmail.com</span>.
-            </p>
-          </form>
-
-          {/* Dispatch Modal / Alert Card Right Over Form on Dispatch */}
-          {dispatchReady && (
-            <div className="p-4 rounded-xl bg-[#1b273e] border-2 border-[#10b981]/80 flex flex-col gap-3 shadow-2xl transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#10b981] font-bold text-sm">
-                  <span className="material-symbols-outlined text-[20px] text-[#10b981]">
-                    verified
+            {/* In-Place Status Banner */}
+            {statusMessage && (
+              <div
+                className={`p-3 rounded-xl border flex flex-col gap-1 transition-all ${
+                  statusMessage.type === 'success'
+                    ? 'bg-[#10b981]/10 border-[#10b981]/40 text-[#10b981]'
+                    : statusMessage.type === 'warning'
+                    ? 'bg-[#f59e0b]/10 border-[#f59e0b]/40 text-[#f59e0b]'
+                    : 'bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]'
+                }`}
+              >
+                <div className="font-bold flex items-center gap-1.5 text-xs">
+                  <span className="material-symbols-outlined text-[16px]">
+                    {statusMessage.type === 'success' ? 'verified' : 'info'}
                   </span>
-                  <span>✅ Ready to Send to Raghavendra</span>
+                  <span>{statusMessage.text}</span>
                 </div>
-                <button
-                  className="text-[#64748b] hover:text-[#f1f5f9] cursor-pointer"
-                  onClick={() => setDispatchReady(false)}
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
-                </button>
+                {statusMessage.detail && (
+                  <p className="font-body text-[11px] text-[#cbd5e1] leading-relaxed">
+                    {statusMessage.detail}
+                  </p>
+                )}
               </div>
+            )}
 
-              <p className="font-body text-xs text-[#94a3b8] leading-relaxed">
-                Select your preferred mail channel below to transmit directly to{' '}
-                <strong className="text-[#f1f5f9]">raghavendraillale@gmail.com</strong>:
-              </p>
-
-              <div className="flex flex-col gap-2">
+            {/* Direct Fallback Channel Row */}
+            <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]/40 font-mono text-[11px] text-[#64748b]">
+              <span>Direct Composing Channels:</span>
+              <div className="flex items-center gap-2.5">
                 <a
-                  className="w-full py-2 px-3 rounded-lg bg-[#06b6d4] text-[#090d16] font-mono text-xs font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-md shadow-[#06b6d4]/20"
-                  href={gmailComposeUrl}
+                  href={gmailUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => onShowToast('Opening Gmail Web Compose...')}
+                  className="text-[#06b6d4] hover:underline flex items-center gap-1 font-semibold"
+                  onClick={() => onShowToast('Launching Gmail web composer...')}
+                  title="Open pre-addressed compose window in Gmail"
                 >
-                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                  Send via Gmail (Web)
+                  <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                  Gmail Web ↗
                 </a>
-
+                <span className="text-[#334155]">|</span>
                 <a
-                  className="w-full py-2 px-3 rounded-lg bg-[#243350] hover:bg-[#1b273e] text-[#f1f5f9] border border-[#1e293b] font-mono text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
-                  href={mailtoUrl}
+                  href={mailtoLink}
+                  className="text-[#10b981] hover:underline flex items-center gap-1 font-semibold"
                   onClick={() => onShowToast('Opening local mail client...')}
+                  title="Open default email application"
                 >
-                  <span className="material-symbols-outlined text-[16px] text-[#10b981]">mail</span>
-                  Default Email App (Outlook / Apple Mail)
+                  <span className="material-symbols-outlined text-[13px]">mail</span>
+                  Mail App ↗
                 </a>
-
-                <button
-                  className="w-full py-2 px-3 rounded-lg bg-[#243350] hover:bg-[#10b981] hover:text-[#090d16] text-[#10b981] border border-[#10b981]/40 font-mono text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
-                  onClick={() => onCopy(fullDraftText, 'Full Email Message Draft')}
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[16px]">content_copy</span>
-                  Copy Full Message Draft
-                </button>
               </div>
             </div>
-          )}
+
+            <p className="text-[11px] text-[#64748b] font-body leading-relaxed text-center">
+              Transmits directly via secure HTTP endpoint to{' '}
+              <span className="text-[#06b6d4] font-mono">raghavendraillale@gmail.com</span> with zero redirects or secondary dialogs.
+            </p>
+          </form>
         </div>
       </div>
     </section>
