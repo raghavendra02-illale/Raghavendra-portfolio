@@ -153,75 +153,108 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
       y,
       vx: 0,
       vy: 0,
-      radius: 4,
-      maxRadius: 65 + Math.random() * 35,
-      alpha: 0.8,
-      maxAlpha: 0.8,
+      radius: 2,
+      maxRadius: 24 + Math.random() * 12,
+      alpha: 0.65,
+      maxAlpha: 0.65,
       color: PALETTE[colorType],
       glowColor: PALETTE[colorType],
       wobbleSpeed: 0,
       wobbleOffset: 0,
       wobbleAmplitude: 0,
       life: 0,
-      maxLife: 60,
+      maxLife: 35,
       type: 'ripple',
     });
   }, []);
 
-  // Spawn bubbles with realistic upward physics, wobble, and specular glint
-  const spawnBubbleBurst = useCallback((x: number, y: number, count = 10, isTap = true) => {
-    const colors: (keyof typeof PALETTE)[] = ['cyan', 'sky', 'emerald', 'violet', 'pink', 'amber'];
+  // Spawn dainty, small bubbles with cluster prevention so clicking multiple times never fills the screen
+  const spawnBubbleBurst = useCallback((x: number, y: number, count = 3, isTap = true) => {
+    const colors: (keyof typeof PALETTE)[] = ['cyan', 'sky', 'emerald', 'violet'];
 
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = isTap ? 1.5 + Math.random() * 3.8 : 0.8 + Math.random() * 2;
+    // 1. Proximity check: If user taps repeatedly in the same area (< 45px) and there are already bubbles,
+    // POP the existing ones instead of stacking more!
+    const nearbyBubbles = particlesRef.current.filter(
+      (p) => p.type === 'bubble' && Math.hypot(p.x - x, p.y - y) < 45
+    );
+
+    if (nearbyBubbles.length >= 3) {
+      // Pop existing nearby bubbles into subtle micro-motes
+      for (const b of nearbyBubbles) {
+        b.life = b.maxLife; // trigger removal
+      }
+      spawnRipple(x, y, 'cyan');
+      audioSynth.playBubblePop();
+      return;
+    }
+
+    // 2. Strict global bubble ceiling: Never allow more than 20 bubbles on screen simultaneously
+    const totalCurrentBubbles = particlesRef.current.filter((p) => p.type === 'bubble').length;
+    if (totalCurrentBubbles >= 20) {
+      // Retire oldest bubbles to make room
+      let removeCount = totalCurrentBubbles - 17;
+      for (let i = 0; i < particlesRef.current.length && removeCount > 0; i++) {
+        if (particlesRef.current[i].type === 'bubble') {
+          particlesRef.current.splice(i, 1);
+          i--;
+          removeCount--;
+        }
+      }
+    }
+
+    // 3. Spawn only 2 to 3 small, dainty bubbles (size 2.8px to 6.2px)
+    const spawnCount = Math.min(count, 3);
+    for (let i = 0; i < spawnCount; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.8; // Mostly upward arc
+      const speed = isTap ? 0.9 + Math.random() * 1.6 : 0.6 + Math.random() * 1.0;
       const chosenColor = colors[Math.floor(Math.random() * colors.length)];
-      const radius = isTap ? 8 + Math.random() * 22 : 5 + Math.random() * 14;
+      // Small, delicate radius (between 2.8px and 6.0px)
+      const radius = 2.8 + Math.random() * 3.2;
 
       particlesRef.current.push({
-        x: x + (Math.random() - 0.5) * 16,
-        y: y + (Math.random() - 0.5) * 16,
+        x: x + (Math.random() - 0.5) * 12,
+        y: y + (Math.random() - 0.5) * 12,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - (isTap ? 1.5 : 0.8), // Initial upward tendency
+        vy: Math.sin(angle) * speed - 1.2, // Upward buoyancy
         radius,
         alpha: 0.85,
         maxAlpha: 0.85,
         color: PALETTE[chosenColor],
         glowColor: PALETTE[chosenColor],
-        wobbleSpeed: 0.03 + Math.random() * 0.05,
+        wobbleSpeed: 0.04 + Math.random() * 0.04,
         wobbleOffset: Math.random() * Math.PI * 2,
-        wobbleAmplitude: 1.2 + Math.random() * 2.2,
+        wobbleAmplitude: 0.8 + Math.random() * 1.2,
         life: 0,
-        maxLife: 140 + Math.random() * 160,
+        maxLife: 75 + Math.random() * 45, // Clean, fast dissipation (~1.2 - 2 seconds)
         type: 'bubble',
       });
     }
 
-    // Spawn tiny glittering micro-sparks
-    for (let j = 0; j < 6; j++) {
+    // Spawn 1 or 2 tiny micro-motes
+    for (let j = 0; j < 2; j++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.0 + Math.random() * 3.5;
+      const speed = 0.8 + Math.random() * 1.5;
       particlesRef.current.push({
         x,
         y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        radius: 1.5 + Math.random() * 2,
-        alpha: 1,
-        maxAlpha: 1,
+        radius: 0.8 + Math.random() * 0.8,
+        alpha: 0.9,
+        maxAlpha: 0.9,
         color: PALETTE.sky,
         glowColor: PALETTE.cyan,
         wobbleSpeed: 0.1,
         wobbleOffset: 0,
-        wobbleAmplitude: 0.5,
+        wobbleAmplitude: 0.3,
         life: 0,
-        maxLife: 40 + Math.random() * 30,
+        maxLife: 25 + Math.random() * 15,
         type: 'spark',
       });
     }
 
     spawnRipple(x, y, 'cyan');
-    setPopCount((prev) => prev + count);
+    setPopCount((prev) => prev + spawnCount);
     setLastBurstTime(Date.now());
 
     if (mode === 'water') {
@@ -261,37 +294,38 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
   // Global Pointer Events listener so clicking or touching anywhere on screen creates responsive FX
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
-      // We spawn responsive bubbles & ripples at pointer location
-      spawnBubbleBurst(e.clientX, e.clientY, mode === 'sky' ? 8 : 12, true);
+      // Spawn only 2-3 small delicate bubbles / droplets at pointer location
+      spawnBubbleBurst(e.clientX, e.clientY, mode === 'sky' ? 4 : 3, true);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
       pointerRef.current.x = e.clientX;
       pointerRef.current.y = e.clientY;
-      pointerRef.current.active = true;
 
       const now = performance.now();
-      // Throttle trail emissions to every 70ms so it flows lightly
-      if (now - pointerRef.current.lastSpawn > 70) {
+      // Throttle trail emissions to every 180ms and ONLY when pointer is pressed
+      if (pointerRef.current.active && now - pointerRef.current.lastSpawn > 180) {
         pointerRef.current.lastSpawn = now;
 
-        if (mode === 'bubbles') {
-          // Micro bubble trail
+        const currentBubbleCount = particlesRef.current.filter((p) => p.type === 'bubble').length;
+
+        if (mode === 'bubbles' && currentBubbleCount < 14) {
+          // Single dainty micro-bubble trail
           particlesRef.current.push({
-            x: e.clientX + (Math.random() - 0.5) * 8,
-            y: e.clientY + (Math.random() - 0.5) * 8,
-            vx: (Math.random() - 0.5) * 0.8,
-            vy: -0.8 - Math.random() * 1.4,
-            radius: 3 + Math.random() * 7,
-            alpha: 0.65,
-            maxAlpha: 0.65,
+            x: e.clientX + (Math.random() - 0.5) * 6,
+            y: e.clientY + (Math.random() - 0.5) * 6,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: -1.2 - Math.random() * 0.8,
+            radius: 2.2 + Math.random() * 2.2, // Small dainty size
+            alpha: 0.75,
+            maxAlpha: 0.75,
             color: PALETTE.cyan,
             glowColor: PALETTE.sky,
             wobbleSpeed: 0.05,
             wobbleOffset: Math.random() * Math.PI,
-            wobbleAmplitude: 1,
+            wobbleAmplitude: 0.8,
             life: 0,
-            maxLife: 60 + Math.random() * 40,
+            maxLife: 50 + Math.random() * 25,
             type: 'bubble',
           });
         } else if (mode === 'sky') {
@@ -299,23 +333,23 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
           particlesRef.current.push({
             x: e.clientX,
             y: e.clientY,
-            vx: (Math.random() - 0.5) * 0.6,
-            vy: (Math.random() - 0.5) * 0.6,
-            radius: 1.5 + Math.random() * 2,
-            alpha: 0.9,
-            maxAlpha: 0.9,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            radius: 1.0 + Math.random() * 1.2,
+            alpha: 0.8,
+            maxAlpha: 0.8,
             color: PALETTE.violet,
             glowColor: PALETTE.cyan,
             wobbleSpeed: 0,
             wobbleOffset: 0,
             wobbleAmplitude: 0,
             life: 0,
-            maxLife: 45,
+            maxLife: 35,
             type: 'spark',
           });
         } else if (mode === 'water') {
           // Water ripple trail
-          if (Math.random() > 0.5) {
+          if (Math.random() > 0.6) {
             spawnRipple(e.clientX, e.clientY, 'sky');
           }
         }
@@ -328,10 +362,9 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches && e.touches.length > 0) {
-        for (let i = 0; i < e.touches.length; i++) {
-          const t = e.touches[i];
-          spawnBubbleBurst(t.clientX, t.clientY, mode === 'sky' ? 8 : 14, true);
-        }
+        const t = e.touches[0];
+        // Spawn only 2-3 small bubbles on touch
+        spawnBubbleBurst(t.clientX, t.clientY, mode === 'sky' ? 4 : 3, true);
       }
     };
 
@@ -342,24 +375,29 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
         pointerRef.current.y = t.clientY;
         pointerRef.current.active = true;
 
-        if (mode === 'bubbles' && Math.random() > 0.4) {
-          particlesRef.current.push({
-            x: t.clientX + (Math.random() - 0.5) * 8,
-            y: t.clientY + (Math.random() - 0.5) * 8,
-            vx: (Math.random() - 0.5) * 0.8,
-            vy: -1 - Math.random() * 1.5,
-            radius: 4 + Math.random() * 8,
-            alpha: 0.7,
-            maxAlpha: 0.7,
-            color: PALETTE.cyan,
-            glowColor: PALETTE.sky,
-            wobbleSpeed: 0.05,
-            wobbleOffset: Math.random() * Math.PI,
-            wobbleAmplitude: 1,
-            life: 0,
-            maxLife: 60,
-            type: 'bubble',
-          });
+        const now = performance.now();
+        if (now - pointerRef.current.lastSpawn > 200) {
+          pointerRef.current.lastSpawn = now;
+          const currentBubbleCount = particlesRef.current.filter((p) => p.type === 'bubble').length;
+          if (mode === 'bubbles' && currentBubbleCount < 14) {
+            particlesRef.current.push({
+              x: t.clientX + (Math.random() - 0.5) * 6,
+              y: t.clientY + (Math.random() - 0.5) * 6,
+              vx: (Math.random() - 0.5) * 0.5,
+              vy: -1.2 - Math.random() * 0.8,
+              radius: 2.2 + Math.random() * 2.2,
+              alpha: 0.75,
+              maxAlpha: 0.75,
+              color: PALETTE.cyan,
+              glowColor: PALETTE.sky,
+              wobbleSpeed: 0.05,
+              wobbleOffset: Math.random() * Math.PI,
+              wobbleAmplitude: 0.8,
+              life: 0,
+              maxLife: 50,
+              type: 'bubble',
+            });
+          }
         }
       }
     };
@@ -368,7 +406,7 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
       const ce = e as CustomEvent<{ x?: number; y?: number; count?: number }>;
       const cx = ce.detail?.x ?? window.innerWidth / 2;
       const cy = ce.detail?.y ?? window.innerHeight / 3;
-      const count = ce.detail?.count ?? 22;
+      const count = ce.detail?.count ? Math.min(ce.detail.count, 4) : 4;
       spawnBubbleBurst(cx, cy, count, true);
     };
 
@@ -436,25 +474,25 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
         });
       }
     } else if (mode === 'bubbles') {
-      // 35 Ambient rising bubbles
-      for (let i = 0; i < 35; i++) {
+      // Normal ambient floating bubbles (moderate size: 6.5px to 13px)
+      for (let i = 0; i < 8; i++) {
         const colors: (keyof typeof PALETTE)[] = ['cyan', 'emerald', 'violet', 'sky'];
         const col = colors[Math.floor(Math.random() * colors.length)];
         particlesRef.current.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: -0.6 - Math.random() * 1.5,
-          radius: 5 + Math.random() * 20,
-          alpha: 0.45 + Math.random() * 0.4,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: -0.5 - Math.random() * 0.8,
+          radius: 6.5 + Math.random() * 6.5, // Bit more large for normal bubbles (6.5px - 13px)
+          alpha: 0.45 + Math.random() * 0.35,
           maxAlpha: 0.8,
           color: PALETTE[col],
           glowColor: PALETTE[col],
           wobbleSpeed: 0.02 + Math.random() * 0.03,
           wobbleOffset: Math.random() * Math.PI * 2,
-          wobbleAmplitude: 1.5 + Math.random() * 2.5,
-          life: Math.random() * 200,
-          maxLife: 300 + Math.random() * 200,
+          wobbleAmplitude: 1.0 + Math.random() * 1.5,
+          life: Math.random() * 120,
+          maxLife: 200 + Math.random() * 100,
           type: 'bubble',
         });
       }
@@ -491,25 +529,28 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
 
       // Ambient automatic spawning based on current mode
       ambientSpawnerRef.current++;
-      if (mode === 'bubbles' && ambientSpawnerRef.current % 18 === 0) {
-        // Continuous upward bubble stream from bottom
+      const currentActiveBubbles = particlesRef.current.filter((p) => p.type === 'bubble').length;
+
+      // Only spawn 1 ambient bubble every 85 frames (~1.4s) if ambient bubbles < 8
+      if (mode === 'bubbles' && ambientSpawnerRef.current % 85 === 0 && currentActiveBubbles < 8) {
+        // Subtle upward stream from bottom
         const colors: (keyof typeof PALETTE)[] = ['cyan', 'emerald', 'violet', 'sky'];
         const col = colors[Math.floor(Math.random() * colors.length)];
         particlesRef.current.push({
           x: Math.random() * width,
-          y: height + 20,
-          vx: (Math.random() - 0.5) * 0.6,
-          vy: -0.8 - Math.random() * 1.8,
-          radius: 6 + Math.random() * 22,
-          alpha: 0.5 + Math.random() * 0.35,
-          maxAlpha: 0.85,
+          y: height + 15,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: -0.6 - Math.random() * 0.8,
+          radius: 6.5 + Math.random() * 6.5, // Bit more large for normal bubbles
+          alpha: 0.55,
+          maxAlpha: 0.8,
           color: PALETTE[col],
           glowColor: PALETTE[col],
-          wobbleSpeed: 0.02 + Math.random() * 0.03,
+          wobbleSpeed: 0.025,
           wobbleOffset: Math.random() * Math.PI * 2,
-          wobbleAmplitude: 1.5 + Math.random() * 2.5,
+          wobbleAmplitude: 1.0 + Math.random() * 1.2,
           life: 0,
-          maxLife: 350 + Math.random() * 200,
+          maxLife: 220 + Math.random() * 80,
           type: 'bubble',
         });
       } else if (mode === 'water' && ambientSpawnerRef.current % 4 === 0) {
@@ -648,8 +689,9 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
           ctx.strokeStyle = `${p.glowColor}${currentAlpha * 0.9})`;
           ctx.stroke();
 
-          // Realistic specular reflection arc / glint (top-left)
-          if (p.radius > 5) {
+          // Specular reflection glints
+          if (p.radius > 6) {
+            // Arc reflection for moderate normal bubbles
             ctx.beginPath();
             ctx.arc(
               p.x - p.radius * 0.28,
@@ -658,20 +700,32 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
               Math.PI * 1.15,
               Math.PI * 1.85
             );
-            ctx.lineWidth = Math.max(1, p.radius * 0.12);
+            ctx.lineWidth = Math.max(1, p.radius * 0.1);
             ctx.strokeStyle = `rgba(255, 255, 255, ${currentAlpha * 0.85})`;
             ctx.stroke();
 
-            // Secondary tiny specular dot (bottom-right reflection)
+            // Secondary tiny specular dot
             ctx.beginPath();
             ctx.arc(
-              p.x + p.radius * 0.35,
-              p.y + p.radius * 0.35,
-              p.radius * 0.14,
+              p.x + p.radius * 0.32,
+              p.y + p.radius * 0.32,
+              Math.max(0.6, p.radius * 0.12),
               0,
               Math.PI * 2
             );
             ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.5})`;
+            ctx.fill();
+          } else if (p.radius >= 2.2) {
+            // Dainty single dot glint for small tap bubbles
+            ctx.beginPath();
+            ctx.arc(
+              p.x - p.radius * 0.32,
+              p.y - p.radius * 0.32,
+              Math.max(0.6, p.radius * 0.28),
+              0,
+              Math.PI * 2
+            );
+            ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.85})`;
             ctx.fill();
           }
 

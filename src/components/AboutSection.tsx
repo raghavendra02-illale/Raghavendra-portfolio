@@ -106,10 +106,10 @@ export const AboutSection: React.FC<AboutProps> = ({
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 window.dispatchEvent(
                   new CustomEvent('burst-bubbles', {
-                    detail: { x: rect.left + rect.width / 2, y: rect.top, count: 18 },
+                    detail: { x: rect.left + rect.width / 2, y: rect.top, count: 3 },
                   })
                 );
-                onShowToast('🫧 Interactive bubbles spawned! Touch anywhere on the screen!');
+                onShowToast('🫧 Spawned subtle bubbles! Touch anywhere to pop or float!');
               }}
               title="Spawn colorful glowing bubbles"
             >
