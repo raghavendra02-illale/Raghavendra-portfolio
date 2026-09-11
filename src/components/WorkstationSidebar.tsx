@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { NAV_ITEMS, CODING_PROFILES } from '../data/workstationData';
 
 interface SidebarProps {
@@ -118,14 +119,17 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
             {NAV_ITEMS.map((item) => {
               const isActive = activeSection === item.id;
               return (
-                <button
+                <motion.button
                   key={item.id}
                   type="button"
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
                   onClick={() => {
                     onNavigate(item.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-all text-left active:scale-95 ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-colors text-left cursor-pointer ${
                     isActive
                       ? 'text-[#06b6d4] bg-[#141d2f] border border-[#06b6d4]/30 shadow-sm'
                       : 'text-[#94a3b8] hover:text-[#06b6d4] hover:bg-[#141d2f]'
@@ -138,7 +142,7 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
                     {item.num}// {item.name}
                   </span>
                   <span className="text-[10px] opacity-60">{item.shortcut}</span>
-                </button>
+                </motion.button>
               );
             })}
           </nav>
@@ -150,16 +154,19 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
               {CODING_PROFILES.map((profile) => (
-                <a
+                <motion.a
                   key={profile.name}
                   href={profile.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
                   className={`p-1.5 rounded bg-[#0f1624] border border-[#1e293b]/40 ${profile.border} ${profile.color} flex items-center gap-1.5 transition-colors`}
                   onClick={() => onShowToast(`Opening ${profile.name} profile...`)}
                 >
                   <span className="font-bold text-[10px]">{profile.label}</span> {profile.name} ↗
-                </a>
+                </motion.a>
               ))}
             </div>
           </div>

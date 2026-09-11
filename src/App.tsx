@@ -14,12 +14,22 @@ import { CredentialsSection } from './components/CredentialsSection';
 import { ContactSection } from './components/ContactSection';
 import { StatusFooter } from './components/StatusFooter';
 import { Toast } from './components/Toast';
+import { InteractiveAtmosphere, AtmosphereMode } from './components/InteractiveAtmosphere';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('about');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastVisible, setToastVisible] = useState<boolean>(false);
+  const [atmosphereMode, setAtmosphereMode] = useState<AtmosphereMode>('bubbles');
+
+  const cycleAtmosphere = useCallback(() => {
+    setAtmosphereMode((prev) => {
+      const next: AtmosphereMode = prev === 'bubbles' ? 'sky' : prev === 'sky' ? 'water' : 'bubbles';
+      showToast(`Atmosphere switched to: ${next.toUpperCase()} FX`);
+      return next;
+    });
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -112,6 +122,20 @@ export default function App() {
 
   return (
     <div className="font-body antialiased min-h-screen bg-[#090d16] text-[#f1f5f9] relative">
+      {/* Ambient Workstation Background Visual Atmosphere */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute inset-0 cyber-grid opacity-25" />
+        <div className="absolute -top-32 right-0 w-[500px] h-[500px] rounded-full bg-[#06b6d4]/8 blur-[120px] ambient-glow-1" />
+        <div className="absolute top-[40%] -left-32 w-[450px] h-[450px] rounded-full bg-[#10b981]/7 blur-[130px] ambient-glow-2" />
+        <div className="absolute -bottom-32 right-[10%] w-[550px] h-[550px] rounded-full bg-[#8b5cf6]/7 blur-[140px] ambient-glow-1" />
+      </div>
+
+      {/* Interactive Atmosphere FX (Sky, Water drops, Bubbles, Click/Touch bursts) */}
+      <InteractiveAtmosphere
+        mode={atmosphereMode}
+        onModeChange={setAtmosphereMode}
+      />
+
       {/* Global Toast Component */}
       <Toast message={toastMessage} visible={toastVisible} />
 
@@ -131,6 +155,8 @@ export default function App() {
           activeSection={activeSection}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           onShowToast={showToast}
+          atmosphereMode={atmosphereMode}
+          onCycleAtmosphere={cycleAtmosphere}
         />
 
         {/* Content Scroll View */}

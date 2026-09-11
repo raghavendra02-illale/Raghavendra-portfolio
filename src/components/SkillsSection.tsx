@@ -1,16 +1,21 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { SKILL_CATEGORIES } from '../data/workstationData';
 
 export const SkillsSection: React.FC = () => {
   return (
-    <section
+    <motion.section
       id="arsenal"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="w-full glass-card rounded-2xl p-6 sm:p-8 border border-[#1e293b] shadow-xl flex flex-col gap-5 scroll-mt-24"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1e293b]">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#06b6d4]/20 text-[#06b6d4] border border-[#06b6d4]/30 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-[#06b6d4]/20 text-[#06b6d4] border border-[#06b6d4]/30 flex items-center justify-center font-bold shadow-sm shadow-[#06b6d4]/10">
               <span className="material-symbols-outlined text-[22px]">terminal</span>
             </div>
             <div>
@@ -37,8 +42,9 @@ export const SkillsSection: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 font-mono text-xs">
         {SKILL_CATEGORIES.map((cat) => (
-          <div
+          <motion.div
             key={cat.id}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className={`p-5 rounded-2xl bg-[#141d2f]/90 border border-[#1e293b]/60 flex flex-col justify-between holo-card gap-4 ${
               cat.colSpan || ''
             }`}
@@ -68,9 +74,11 @@ export const SkillsSection: React.FC = () => {
                 {cat.skills.map((s, idx) => {
                   const isWide = cat.id === 'databases' && idx === 4;
                   return (
-                    <div
+                    <motion.div
                       key={s.name}
-                      className={`p-2.5 rounded-xl bg-[#1b273e]/60 border border-[#1e293b]/50 flex items-center justify-between hover:border-[#06b6d4]/50 transition-colors ${
+                      whileHover={{ x: 3, scale: 1.01 }}
+                      transition={{ duration: 0.15 }}
+                      className={`p-2.5 rounded-xl bg-[#1b273e]/60 border border-[#1e293b]/50 flex items-center justify-between hover:border-[#06b6d4]/50 transition-colors cursor-default ${
                         isWide ? 'sm:col-span-2 border-[#8b5cf6]/40 hover:border-[#8b5cf6]' : ''
                       }`}
                     >
@@ -81,7 +89,7 @@ export const SkillsSection: React.FC = () => {
                       <span className={`text-[11px] font-semibold ${s.color}`}>
                         {s.detail}
                       </span>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -91,9 +99,9 @@ export const SkillsSection: React.FC = () => {
               <span>{cat.footerLabel}</span>
               <span className={`font-bold ${cat.accentColor}`}>{cat.footerValue}</span>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 };

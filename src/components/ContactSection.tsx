@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CODING_PROFILES } from '../data/workstationData';
 
 interface ContactProps {
@@ -98,8 +99,12 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
   };
 
   return (
-    <section
+    <motion.section
       id="contact"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="w-full glass-card rounded-2xl p-6 sm:p-8 border border-[#1e293b] shadow-2xl flex flex-col gap-6 scroll-mt-24"
     >
       <div className="flex justify-between items-center pb-3 border-b border-[#1e293b]">
@@ -327,11 +332,14 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
               />
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
               className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg font-mono text-xs cursor-pointer ${
                 isSubmitting
                   ? 'bg-[#1e293b] text-[#94a3b8] cursor-not-allowed opacity-80'
-                  : 'bg-[#06b6d4] text-[#090d16] hover:brightness-110 active:scale-95 shadow-[#06b6d4]/25'
+                  : 'bg-[#06b6d4] text-[#090d16] hover:brightness-110 shadow-[#06b6d4]/25'
               }`}
               disabled={isSubmitting}
               type="submit"
@@ -349,32 +357,38 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
                   Send Message / Dispatch Email Directly
                 </>
               )}
-            </button>
+            </motion.button>
 
             {/* In-Place Status Banner */}
-            {statusMessage && (
-              <div
-                className={`p-3 rounded-xl border flex flex-col gap-1 transition-all ${
-                  statusMessage.type === 'success'
-                    ? 'bg-[#10b981]/10 border-[#10b981]/40 text-[#10b981]'
-                    : statusMessage.type === 'warning'
-                    ? 'bg-[#f59e0b]/10 border-[#f59e0b]/40 text-[#f59e0b]'
-                    : 'bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]'
-                }`}
-              >
-                <div className="font-bold flex items-center gap-1.5 text-xs">
-                  <span className="material-symbols-outlined text-[16px]">
-                    {statusMessage.type === 'success' ? 'verified' : 'info'}
-                  </span>
-                  <span>{statusMessage.text}</span>
-                </div>
-                {statusMessage.detail && (
-                  <p className="font-body text-[11px] text-[#cbd5e1] leading-relaxed">
-                    {statusMessage.detail}
-                  </p>
-                )}
-              </div>
-            )}
+            <AnimatePresence>
+              {statusMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.25 }}
+                  className={`p-3 rounded-xl border flex flex-col gap-1 transition-all ${
+                    statusMessage.type === 'success'
+                      ? 'bg-[#10b981]/10 border-[#10b981]/40 text-[#10b981]'
+                      : statusMessage.type === 'warning'
+                      ? 'bg-[#f59e0b]/10 border-[#f59e0b]/40 text-[#f59e0b]'
+                      : 'bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]'
+                  }`}
+                >
+                  <div className="font-bold flex items-center gap-1.5 text-xs">
+                    <span className="material-symbols-outlined text-[16px]">
+                      {statusMessage.type === 'success' ? 'verified' : 'info'}
+                    </span>
+                    <span>{statusMessage.text}</span>
+                  </div>
+                  {statusMessage.detail && (
+                    <p className="font-body text-[11px] text-[#cbd5e1] leading-relaxed">
+                      {statusMessage.detail}
+                    </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Direct Fallback Channel Row */}
             <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]/40 font-mono text-[11px] text-[#64748b]">
@@ -411,6 +425,6 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
           </form>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };

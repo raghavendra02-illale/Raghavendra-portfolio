@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { PIPELINE_STAGES } from '../data/workstationData';
 
 interface DefenseProps {
@@ -54,13 +55,17 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
   };
 
   return (
-    <section
+    <motion.section
       id="defense"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="w-full glass-card rounded-2xl p-6 sm:p-8 border border-[#1e293b] shadow-xl flex flex-col gap-5 scroll-mt-24"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1e293b]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 flex items-center justify-center font-bold shadow-sm shadow-[#10b981]/15">
             <span className="material-symbols-outlined text-[24px]">shield</span>
           </div>
           <div>
@@ -78,20 +83,32 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
           </div>
         </div>
 
-        <button
+        <motion.button
           type="button"
-          className="px-3.5 py-1.5 rounded-lg bg-[#10b981] text-[#090d16] font-mono text-xs font-bold active:scale-95 transition-all flex items-center gap-1.5 self-start sm:self-auto hover:brightness-110 shadow-md shadow-[#10b981]/20 cursor-pointer disabled:opacity-50"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ duration: 0.18 }}
+          className={`px-3.5 py-1.5 rounded-lg font-mono text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-md ${
+            isSimulating
+              ? 'bg-[#1e293b] text-[#94a3b8] cursor-not-allowed'
+              : 'bg-[#10b981] text-[#090d16] hover:brightness-110 shadow-[#10b981]/20'
+          }`}
           onClick={runPipelineSimulation}
           disabled={isSimulating}
         >
-          <span className="material-symbols-outlined text-[16px]">play_circle</span>
+          <span className={`material-symbols-outlined text-[16px] ${isSimulating ? 'animate-spin' : ''}`}>
+            {isSimulating ? 'sync' : 'play_circle'}
+          </span>
           {isSimulating ? 'Executing Verification...' : 'Run Flight Pipeline Sim'}
-        </button>
+        </motion.button>
       </div>
 
       {/* 4 Pillars with Hover Elevation */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card">
+        <motion.div
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card"
+        >
           <div>
             <div className="flex justify-between font-mono text-[11px] text-[#10b981] mb-1">
               <span>01. C ENGINE</span>
@@ -106,9 +123,12 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
             <span>Standard C99</span>
             <span className="text-[#10b981] font-bold">DETERMINISTIC</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card">
+        <motion.div
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card"
+        >
           <div>
             <div className="flex justify-between font-mono text-[11px] text-[#06b6d4] mb-1">
               <span>02. VALIDATION</span>
@@ -123,9 +143,12 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
             <span>Pandera &amp; PyTest</span>
             <span className="text-[#06b6d4] font-bold">ZERO DRIFT</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card">
+        <motion.div
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card"
+        >
           <div>
             <div className="flex justify-between font-mono text-[11px] text-[#8b5cf6] mb-1">
               <span>03. MIGRATION</span>
@@ -140,9 +163,12 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
             <span>ADA-to-C Pipelines</span>
             <span className="text-[#8b5cf6] font-bold">TYPE ENFORCED</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card">
+        <motion.div
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card"
+        >
           <div>
             <div className="flex justify-between font-mono text-[11px] text-emerald-400 mb-1">
               <span>04. CRYPTO</span>
@@ -157,7 +183,7 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
             <span>Bitwise Hash Checks</span>
             <span className="text-emerald-400 font-bold">100% AUDITED</span>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Interactive 5-Stage Flight Telemetry Node Row */}
@@ -180,13 +206,16 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
           {PIPELINE_STAGES.map((st) => {
             const isSelected = activeStageId === st.id;
             return (
-              <button
+              <motion.button
                 key={st.id}
                 type="button"
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => handleInspectStage(st.id)}
                 className={`p-2 rounded-lg bg-[#141d2f] text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-2 border-[#06b6d4] shadow-[0_0_15px_rgba(6,182,212,0.35)] text-[#f1f5f9]'
+                    ? 'border-2 border-[#06b6d4] shadow-[0_0_18px_rgba(6,182,212,0.4)] text-[#f1f5f9]'
                     : 'border border-[#1e293b] hover:border-[#06b6d4]/60 text-[#94a3b8]'
                 }`}
               >
@@ -196,18 +225,27 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
                 </div>
                 <div className="text-xs font-semibold truncate text-[#f1f5f9]">{st.title}</div>
                 <div className="text-[10px] text-[#64748b]">{st.stat}</div>
-              </button>
+              </motion.button>
             );
           })}
         </div>
 
         {/* Real-Time Log Viewer with Blinking Cursor */}
         <div className="p-3 rounded-lg bg-[#070a12] font-mono text-xs text-[#94a3b8] flex items-center justify-between overflow-x-auto border border-[#1e293b]/50">
-          <div className="flex items-center gap-1.5 truncate pr-2">
-            <span className="text-emerald-400 font-bold">[TELEMETRY]</span>
-            <span className="truncate text-[#f1f5f9]">{logText}</span>
-            <span className="inline-block w-2 h-3.5 bg-[#06b6d4] animate-pulse shrink-0 align-middle" />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={logText}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 6 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-1.5 truncate pr-2"
+            >
+              <span className="text-emerald-400 font-bold">[TELEMETRY]</span>
+              <span className="truncate text-[#f1f5f9]">{logText}</span>
+              <span className="inline-block w-2 h-3.5 bg-[#06b6d4] animate-pulse shrink-0 align-middle" />
+            </motion.div>
+          </AnimatePresence>
           <button
             type="button"
             className="shrink-0 p-1 text-[#64748b] hover:text-[#06b6d4] active:scale-90 transition-transform cursor-pointer"
@@ -218,6 +256,6 @@ export const DefenseSection: React.FC<DefenseProps> = ({ onCopy, onShowToast }) 
           </button>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };

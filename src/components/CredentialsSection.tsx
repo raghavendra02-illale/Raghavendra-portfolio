@@ -1,10 +1,15 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { CREDENTIALS } from '../data/workstationData';
 
 export const CredentialsSection: React.FC = () => {
   return (
-    <section
+    <motion.section
       id="credentials"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="w-full glass-card rounded-2xl p-6 sm:p-8 border border-[#1e293b] shadow-xl flex flex-col gap-5 scroll-mt-24"
     >
       <div className="flex justify-between items-center pb-3 border-b border-[#1e293b]">
@@ -21,9 +26,10 @@ export const CredentialsSection: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {CREDENTIALS.map((cred) => (
-          <div
+          <motion.div
             key={cred.id}
-            className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card"
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col justify-between holo-card hover:border-[#06b6d4]/40"
           >
             <div>
               <span
@@ -62,9 +68,9 @@ export const CredentialsSection: React.FC = () => {
             <div className="mt-3 pt-2 border-t border-[#1e293b]/40 font-mono text-[10px] text-[#10b981]">
               {cred.badge}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 };
