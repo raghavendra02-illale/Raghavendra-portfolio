@@ -76,7 +76,7 @@ export const WorkstationHeader: React.FC<HeaderProps> = ({
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]" />
         </span>
-        <span>LTTS AEROSPACE PIPELINE: ACTIVE</span>
+        <span>LTTS PIPELINE: ACTIVE</span>
       </div>
 
       {/* Quick Action Badges & Clock */}

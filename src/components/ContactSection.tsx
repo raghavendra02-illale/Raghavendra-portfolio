@@ -301,8 +301,8 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
                 <option value="Full-Time Engineering Role (Applied AI / Backend Systems)">
                   Full-Time Engineering Role (Applied AI / Backend Systems)
                 </option>
-                <option value="Mission-Critical Aerospace / LTTS Systems Collaboration">
-                  Mission-Critical Aerospace / LTTS Systems Collaboration
+                <option value="Mission-Critical LTTS Systems Collaboration">
+                  Mission-Critical LTTS Systems Collaboration
                 </option>
                 <option value="Enterprise GenAI / RAG Advisory">
                   Enterprise GenAI / RAG Advisory

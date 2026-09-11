@@ -11,7 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const CODING_PROFILES = [
   { label: 'LC', name: 'LeetCode', url: 'https://leetcode.com/u/Raghu_illale_/', color: 'text-amber-400', border: 'hover:border-amber-400' },
-  { label: 'GFG', name: 'GeeksforGeeks', url: 'https://www.geeksforgeeks.org/profile/raghavendraillale', color: 'text-emerald-400', border: 'hover:border-emerald-400' },
+  { label: 'GFG', name: 'GeeksforGeeks', url: 'https://www.geeksforgeeks.org/profile/raghavendraillale?tab=activity', color: 'text-emerald-400', border: 'hover:border-emerald-400' },
   { label: 'C360', name: 'Code360', url: 'https://www.naukri.com/code360/profile/Raghu_03', color: 'text-primary', border: 'hover:border-primary' },
 ];
 
@@ -88,11 +88,11 @@ export const PROJECTS: Project[] = [
   {
     id: 'c99-nrt',
     category: 'aerospace',
-    tag: 'C99 • AEROSPACE DEFENSE',
+    tag: 'C99 • LTTS SYSTEMS',
     filename: '03_defense_c99.c',
     title: 'Deterministic C99 & NRT Tooling (LTTS)',
     description: 'Developed 15,000+ LOC production-grade Standard C tooling system for deterministic configuration validation, memory-safe processing, and CSV flight ingestion into ADA source systems with bitwise SHA-256 integrity verification.',
-    metricLabel: 'DEFENSE CODEBASE',
+    metricLabel: 'LTTS CODEBASE',
     metricValue: '15,000+ LOC C99',
     metricHighlight: 'Zero Memory Leaks • Tamper-Proof Checksums',
     stack: 'Standard C • ADA • Python',

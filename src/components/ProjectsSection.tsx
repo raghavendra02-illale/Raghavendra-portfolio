@@ -68,7 +68,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             }`}
             onClick={() => handleFilterChange('aerospace')}
           >
-            Aerospace (LTTS) ({aerospaceCount})
+            LTTS ({aerospaceCount})
           </button>
           <button
             type="button"

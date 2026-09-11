@@ -17,6 +17,7 @@ Built with an aerospace-grade terminal aesthetic, this application models an int
   - 📞 Phone: [+91 7899911238](tel:+917899911238)
   - 🌐 GitHub: [github.com/raghavendra02-illale](https://github.com/raghavendra02-illale)
   - 💼 LinkedIn: [linkedin.com/in/raghavendra-illale-93a325224](https://www.linkedin.com/in/raghavendra-illale-93a325224/)
+  - 💻 Coding Profiles: [LeetCode](https://leetcode.com/u/Raghu_illale_/), [GeeksforGeeks](https://www.geeksforgeeks.org/profile/raghavendraillale?tab=activity), [Code360](https://www.naukri.com/code360/profile/Raghu_03)
 
 ---
 
