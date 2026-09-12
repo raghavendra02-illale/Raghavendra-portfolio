@@ -129,6 +129,23 @@ html, body {
    LUMINOUS HIGH-TECH LIGHT MODE ("Crazy Attractive" Cyber-Lab Aesthetic)
    ========================================================================== */
 
+html.light {
+  --color-surface: #f8fafc;
+  --color-surface-dim: #f1f5f9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f8fafc;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #f1f5f9;
+  --color-surface-container-highest: #e2e8f0;
+  --color-primary: #0284c7;
+  --color-secondary: #059669;
+  --color-tertiary: #7c3aed;
+  --color-outline: #334155;
+  --color-outline-variant: rgba(2, 132, 199, 0.16);
+  --color-on-surface: #090d16;
+  --color-on-surface-variant: #1e293b;
+}
+
 html.light,
 html.light body {
   background: 
@@ -166,23 +183,53 @@ html.light footer {
   box-shadow: 0 -4px 20px -2px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* Base Canvas Surfaces mapped to crisp light panels */
+/* Base Canvas & Modal Surfaces mapped to crisp light panels */
 html.light .bg-\[\#090d16\],
 html.light .bg-\[\#070a12\],
 html.light .bg-\[\#05080e\] {
   background-color: #f8fafc !important;
+  border-color: rgba(2, 132, 199, 0.16) !important;
+}
+
+html.light .bg-\[\#0b101c\] {
+  background-color: #ffffff !important;
+  border-color: rgba(2, 132, 199, 0.22) !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(2, 132, 199, 0.15) !important;
+}
+
+html.light .bg-\[\#0e1526\],
+html.light .bg-\[\#0e1526\]\/80 {
+  background-color: rgba(248, 250, 252, 0.96) !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
+}
+
+html.light .bg-\[\#111827\],
+html.light .bg-\[\#111827\]\/60 {
+  background-color: #f8fafc !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light .bg-\[\#080d1a\] {
+  background-color: #f8fafc !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
 }
 
 html.light .bg-\[\#0f1624\],
-html.light .bg-\[\#141d2f\] {
+html.light .bg-\[\#141d2f\],
+html.light .bg-\[\#141d2f\]\/70,
+html.light .bg-\[\#141d2f\]\/80,
+html.light .bg-\[\#141d2f\]\/90 {
   background-color: #ffffff !important;
   border-color: rgba(2, 132, 199, 0.18) !important;
   box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(2, 132, 199, 0.04) !important;
 }
 
-html.light .bg-\[\#1b273e\] {
+html.light .bg-\[\#1b273e\],
+html.light .bg-\[\#1b273e\]\/60,
+html.light .bg-\[\#1b273e\]\/80 {
   background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
+  border-color: rgba(2, 132, 199, 0.20) !important;
 }
 
 html.light .bg-\[\#243350\] {
@@ -192,7 +239,7 @@ html.light .bg-\[\#243350\] {
 /* Holographic and Frosted Glass Cards with Prismatic Edge Hover */
 html.light .glass-card,
 html.light .holo-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 255, 0.90) 100%) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 255, 0.92) 100%) !important;
   backdrop-filter: blur(16px) saturate(180%) !important;
   border: 1px solid rgba(2, 132, 199, 0.18) !important;
   box-shadow: 
@@ -213,23 +260,40 @@ html.light .holo-card:hover {
     0 0 0 1px rgba(255, 255, 255, 0.95) inset !important;
 }
 
-/* Light Mode Typography Adjustments for Crisp WCAG AA Contrast */
+/* Light Mode Typography Adjustments for Ultra-Crisp WCAG AAA Contrast */
 html.light .text-\[\#f1f5f9\],
 html.light .text-\[\#ffffff\],
-html.light .text-white {
-  color: #090d16 !important;
+html.light .text-white,
+html.light .text-\[\#e2e8f0\],
+html.light .text-\[\#cbd5e1\],
+html.light .text-\[\#e5e7eb\],
+html.light .text-\[\#d1d5db\] {
+  color: #090d16 !important; /* Pitch charcoal black for maximum readability */
 }
 
 html.light .text-\[\#94a3b8\] {
-  color: #334155 !important;
+  color: #1e293b !important; /* Dark slate 800 - crisp, effortless reading */
 }
 
 html.light .text-\[\#64748b\] {
-  color: #475569 !important;
+  color: #334155 !important; /* Dark readable slate 700 */
+}
+
+html.light .text-emerald-400 {
+  color: #059669 !important;
+}
+
+html.light .text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+html.light .text-amber-400 {
+  color: #b45309 !important;
 }
 
 html.light .border-\[\#1e293b\],
 html.light .border-\[\#1e293b\]\/60,
+html.light .border-\[\#1e293b\]\/50,
 html.light .border-\[\#1e293b\]\/40 {
   border-color: rgba(2, 132, 199, 0.16) !important;
 }
@@ -252,21 +316,28 @@ html.light .bg-\[\#06b6d4\] {
   color: #ffffff !important;
 }
 
+html.light .bg-\[\#06b6d4\]\/5,
 html.light .bg-\[\#06b6d4\]\/10,
-html.light .bg-\[\#06b6d4\]\/15 {
-  background-color: rgba(2, 132, 199, 0.12) !important;
+html.light .bg-\[\#06b6d4\]\/15,
+html.light .bg-\[\#06b6d4\]\/20 {
+  background-color: rgba(2, 132, 199, 0.10) !important;
+  border-color: rgba(2, 132, 199, 0.28) !important;
   color: #0284c7 !important;
 }
 
 html.light .bg-\[\#10b981\]\/10,
-html.light .bg-\[\#10b981\]\/15 {
-  background-color: rgba(5, 150, 105, 0.12) !important;
+html.light .bg-\[\#10b981\]\/15,
+html.light .bg-\[\#10b981\]\/20 {
+  background-color: rgba(5, 150, 105, 0.10) !important;
+  border-color: rgba(5, 150, 105, 0.28) !important;
   color: #059669 !important;
 }
 
 html.light .bg-\[\#8b5cf6\]\/10,
-html.light .bg-\[\#8b5cf6\]\/15 {
-  background-color: rgba(124, 58, 237, 0.12) !important;
+html.light .bg-\[\#8b5cf6\]\/15,
+html.light .bg-\[\#8b5cf6\]\/20 {
+  background-color: rgba(124, 58, 237, 0.10) !important;
+  border-color: rgba(124, 58, 237, 0.28) !important;
   color: #7c3aed !important;
 }
 
@@ -306,11 +377,23 @@ html.light select {
   border-color: #cbd5e1 !important;
 }
 
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
 html.light input:focus,
 html.light textarea:focus,
 html.light select:focus {
   border-color: #0284c7 !important;
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
+}
+
+html.light .hover\:bg-\[\#1e2b42\]:hover,
+html.light .hover\:bg-\[\#1f2d47\]:hover {
+  background-color: #f1f5f9 !important;
+  color: #0284c7 !important;
 }
 
 /* Modal Dialog backdrop and body in Light Mode */
