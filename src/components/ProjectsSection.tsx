@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Project } from '../types';
 import { PROJECTS } from '../data/workstationData';
+import { ProjectDetailModal } from './ProjectDetailModal';
+import { playClickSound, playPopSound } from '../utils/audioFx';
 
 interface ProjectsProps {
   onShowToast: (msg: string) => void;
@@ -8,6 +11,7 @@ interface ProjectsProps {
 
 export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
   const [filter, setFilter] = useState<'all' | 'genai' | 'aerospace' | 'cloud'>('all');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const genAiCount = PROJECTS.filter((p) => p.category === 'genai').length;
   const aerospaceCount = PROJECTS.filter((p) => p.category === 'aerospace').length;
@@ -19,8 +23,14 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
   });
 
   const handleFilterChange = (cat: 'all' | 'genai' | 'aerospace' | 'cloud') => {
+    playClickSound();
     setFilter(cat);
     onShowToast(`Filtering to ${cat.toUpperCase()} systems`);
+  };
+
+  const handleOpenProject = (p: Project) => {
+    playPopSound();
+    setSelectedProject(p);
   };
 
   return (
@@ -39,7 +49,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
             Featured Production Systems
           </h2>
           <p className="font-mono text-xs text-[#64748b] mt-0.5">
-            Engineered architectures &amp; production systems with complete readable documentation
+            Click any system to inspect complete architecture, execution pipelines, and benchmarks
           </p>
         </div>
 
@@ -92,7 +102,7 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
         </div>
       </div>
 
-      {/* 6 Production Systems Responsive Clean Grid: 3-column on large screens, completely readable */}
+      {/* 6 Production Systems Responsive Clean Grid */}
       <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <AnimatePresence mode="popLayout">
           {filteredProjects.map((p) => (
@@ -104,7 +114,8 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
               exit={{ opacity: 0, scale: 0.94 }}
               whileHover={{ y: -6, transition: { duration: 0.2 } }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="p-6 rounded-2xl glass-card flex flex-col justify-between gap-4 holo-card"
+              onClick={() => handleOpenProject(p)}
+              className="p-6 rounded-2xl glass-card flex flex-col justify-between gap-4 holo-card cursor-pointer group hover:border-[#06b6d4]/50"
             >
               <div className="flex flex-col gap-2.5">
                 <div className="flex justify-between items-center text-[11px] font-mono">
@@ -128,15 +139,19 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
                     />
                     {p.tag}
                   </span>
-                  <span className="text-[#64748b]">{p.filename}</span>
+                  <span className="text-[#64748b] group-hover:text-[#06b6d4] transition-colors flex items-center gap-1">
+                    <span>{p.filename}</span>
+                    <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  </span>
                 </div>
 
-                <h3 className="font-display text-base font-bold text-[#f1f5f9]">
+                <h3 className="font-display text-base font-bold text-[#f1f5f9] group-hover:text-[#06b6d4] transition-colors">
                   {p.title}
                 </h3>
 
-                <p className="font-body text-xs text-[#94a3b8] leading-relaxed">
-                  {p.description}
+                {/* Little description in main view */}
+                <p className="font-body text-xs text-[#94a3b8] leading-relaxed line-clamp-2">
+                  {p.shortDescription || p.description}
                 </p>
 
                 <div className="p-3 rounded-xl bg-[#05080e] font-mono text-xs flex flex-col gap-1 border border-[#1e293b]/40 mt-1">
@@ -181,24 +196,42 @@ export const ProjectsSection: React.FC<ProjectsProps> = ({ onShowToast }) => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#1e293b]/50 flex justify-between items-center text-xs font-mono">
-                <span className="text-[#64748b]">{p.stack}</span>
-                <span
-                  className={`font-semibold flex items-center gap-1 ${
-                    p.category === 'genai'
-                      ? 'text-[#8b5cf6]'
-                      : p.category === 'aerospace'
-                      ? 'text-[#06b6d4]'
-                      : 'text-[#10b981]'
-                  }`}
-                >
-                  {p.statusBadge}
-                </span>
+              {/* Bottom Actions & Stack */}
+              <div className="pt-3 border-t border-[#1e293b]/50 flex flex-col gap-2">
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="text-[#64748b] truncate max-w-[60%]">{p.stack}</span>
+                  <span
+                    className={`font-semibold flex items-center gap-1 ${
+                      p.category === 'genai'
+                        ? 'text-[#8b5cf6]'
+                        : p.category === 'aerospace'
+                        ? 'text-[#06b6d4]'
+                        : 'text-[#10b981]'
+                    }`}
+                  >
+                    {p.statusBadge}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] font-mono text-[#06b6d4] group-hover:translate-x-0.5 transition-transform">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">read_more</span>
+                    View Full Architecture &amp; Specs
+                  </span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </div>
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
+
+      {/* In-depth Architecture & Details Popup Dialog */}
+      <ProjectDetailModal
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
+        onShowToast={onShowToast}
+      />
     </motion.section>
   );
 };

@@ -84,38 +84,6 @@ export const AboutSection: React.FC<AboutProps> = ({
               <span className="material-symbols-outlined text-[18px]">verified_user</span>
               Inspect C Tooling (LTTS)
             </motion.button>
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ duration: 0.18 }}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#141d2f] hover:bg-[#1b273e] text-[#f1f5f9] font-mono text-xs transition-all border border-[#1e293b] hover:border-[#06b6d4]/40 cursor-pointer"
-              onClick={() => onCopy('raghavendraillale@gmail.com', 'Email Address')}
-            >
-              <span className="material-symbols-outlined text-[17px] text-[#06b6d4]">content_copy</span>
-              Copy Email
-            </motion.button>
-
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.18 }}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#06b6d4]/10 hover:bg-[#06b6d4]/20 text-[#06b6d4] font-mono text-xs font-semibold transition-all border border-[#06b6d4]/40 hover:border-[#06b6d4] shadow-sm shadow-[#06b6d4]/15 cursor-pointer"
-              onClick={(e) => {
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                window.dispatchEvent(
-                  new CustomEvent('burst-bubbles', {
-                    detail: { x: rect.left + rect.width / 2, y: rect.top, count: 3 },
-                  })
-                );
-                onShowToast('🫧 Spawned subtle bubbles! Touch anywhere to pop or float!');
-              }}
-              title="Spawn colorful glowing bubbles"
-            >
-              <span>🫧</span>
-              <span>Pop Bubbles FX</span>
-            </motion.button>
           </div>
         </div>
 

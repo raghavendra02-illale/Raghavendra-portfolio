@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CODING_PROFILES } from '../data/workstationData';
+import { playClickSound, playSuccessSound } from '../utils/audioFx';
 
 interface ContactProps {
   onCopy: (text: string, label: string) => void;
@@ -27,8 +28,14 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
     subject
   )}&body=${encodeURIComponent(emailBody)}`;
 
+  const handleCopyAction = (val: string, label: string) => {
+    playSuccessSound();
+    onCopy(val, label);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    playClickSound();
 
     if (!name.trim() || !email.trim() || !message.trim()) {
       onShowToast('Please fill out all required fields');
@@ -37,62 +44,56 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
 
     setIsSubmitting(true);
     setStatusMessage(null);
-    onShowToast('Transmitting payload to raghavendraillale@gmail.com...');
+    onShowToast('Transmitting message to raghavendraillale@gmail.com...');
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/raghavendraillale@gmail.com', {
+      const response = await fetch('https://formspree.io/f/xyzyqobk', {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
-          Accept: 'application/json',
         },
         body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          _subject: `[Portfolio Inquiry] ${subject} - from ${name.trim()}`,
-          message: message.trim(),
-          _captcha: 'false',
-          _template: 'table',
+          name,
+          email,
+          subject,
+          message,
+          recipient: 'raghavendraillale@gmail.com',
+          timestamp: new Date().toISOString(),
+          system: 'Raghavendra Workstation Direct Relay',
         }),
       });
 
-      const data = await response.json();
-
-      if (response.ok && (data.success === 'true' || data.success === true)) {
+      if (response.ok) {
+        playSuccessSound();
         setStatusMessage({
           type: 'success',
-          text: 'Message Delivered Directly to Raghavendra’s Inbox!',
-          detail: 'Your transmission has been forwarded straight to raghavendraillale@gmail.com.',
+          text: 'Transmission Dispatched Successfully',
+          detail: 'Your message has been routed to raghavendraillale@gmail.com. Raghavendra will reply promptly.',
         });
-        onShowToast('✅ Message dispatched directly to Raghavendra’s inbox!');
+        onShowToast('Message transmitted successfully!');
         setName('');
         setEmail('');
         setMessage('');
-      } else if (data.message && data.message.includes('Activation')) {
-        // FormSubmit first-time 1-click verification
+      } else {
+        // Fallback to client mail dispatch
+        playSuccessSound();
         setStatusMessage({
           type: 'warning',
-          text: 'First-Time Activation Needed for raghavendraillale@gmail.com',
-          detail:
-            'FormSubmit has sent a 1-click activation link to your inbox. Open your Gmail, click "Activate Form", and all future submissions will land straight into your inbox!',
+          text: 'Opening Direct Email Client Fallback',
+          detail: 'Opening your default mail client with pre-formatted payload to ensure immediate transmission.',
         });
-        onShowToast('Check your email to click the 1-time FormSubmit activation link.');
-      } else {
-        setStatusMessage({
-          type: 'success',
-          text: 'Transmission Dispatched!',
-          detail: 'Payload processed. You may also confirm via Gmail Web compose below.',
-        });
-        onShowToast('Transmission dispatched to raghavendraillale@gmail.com');
+        window.open(gmailUrl, '_blank');
       }
     } catch {
+      // Network or sandbox failure fallback
+      playSuccessSound();
       setStatusMessage({
         type: 'warning',
-        text: 'Direct Web Transmission Encountered Network Restriction',
-        detail:
-          'Due to sandboxed browser policies, please click "Open in Gmail Web" below to send instantly with one click.',
+        text: 'Opening Mail Client Direct Link',
+        detail: 'Connecting via pre-configured Gmail compose window to raghavendraillale@gmail.com.',
       });
-      onShowToast('Opening direct mail relay option...');
+      window.open(gmailUrl, '_blank');
     } finally {
       setIsSubmitting(false);
     }
@@ -154,61 +155,57 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
               <a
-                className="px-3 py-1.5 rounded-lg bg-[#06b6d4] text-[#090d16] font-mono text-xs font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-[#06b6d4] text-[#090d16] font-mono text-xs font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                 href="mailto:raghavendraillale@gmail.com"
                 onClick={() => onShowToast('Opening default mail client...')}
               >
-                <span className="material-symbols-outlined text-[15px]">mail</span> Email Direct
+                <span className="material-symbols-outlined text-[15px]">mail</span> Open Mail Client
               </a>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-[#141d2f] border border-[#1e293b] hover:border-[#06b6d4] text-[#f1f5f9] font-mono text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-                onClick={() => onCopy('raghavendraillale@gmail.com', 'Email Address')}
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[15px] text-[#06b6d4]">
-                  content_copy
-                </span>{' '}
-                Copy Email
-              </button>
             </div>
           </div>
 
           <div className="flex flex-col gap-2 font-mono text-xs">
             <div
-              className="p-3 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex items-center justify-between holo-card cursor-pointer"
-              onClick={() => onCopy('raghavendraillale@gmail.com', 'Email Address')}
+              className="p-3 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex items-center justify-between holo-card cursor-pointer group"
+              onClick={() => handleCopyAction('raghavendraillale@gmail.com', 'Email Address')}
             >
               <div>
                 <div className="text-[10px] text-[#64748b]">PRIMARY COMM CHANNEL</div>
-                <div className="text-[#06b6d4] font-bold flex items-center gap-1.5">
+                <div className="text-[#06b6d4] font-bold">
                   raghavendraillale@gmail.com
-                  <span className="material-symbols-outlined text-[14px]">content_copy</span>
                 </div>
               </div>
               <button
                 className="p-1.5 rounded-lg bg-[#1b273e] text-[#06b6d4] hover:bg-[#06b6d4] hover:text-[#090d16] active:scale-90 transition-all cursor-pointer"
                 title="Copy email"
                 type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyAction('raghavendraillale@gmail.com', 'Email Address');
+                }}
               >
                 <span className="material-symbols-outlined text-[16px]">content_copy</span>
               </button>
             </div>
 
             <div
-              className="p-3 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex items-center justify-between holo-card cursor-pointer"
-              onClick={() => onCopy('+917899911238', 'Phone Number')}
+              className="p-3 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex items-center justify-between holo-card cursor-pointer group"
+              onClick={() => handleCopyAction('+917899911238', 'Phone Number')}
             >
               <div>
                 <div className="text-[10px] text-[#64748b]">PHONE RELAY</div>
-                <div className="text-[#10b981] font-bold flex items-center gap-1.5">
+                <div className="text-[#10b981] font-bold">
                   +91 7899911238
-                  <span className="material-symbols-outlined text-[14px]">content_copy</span>
                 </div>
               </div>
               <button
                 className="p-1.5 rounded-lg bg-[#1b273e] text-[#10b981] hover:bg-[#10b981] hover:text-[#090d16] active:scale-90 transition-all cursor-pointer"
                 title="Copy phone"
                 type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyAction('+917899911238', 'Phone Number');
+                }}
               >
                 <span className="material-symbols-outlined text-[16px]">content_copy</span>
               </button>
@@ -261,8 +258,11 @@ export const ContactSection: React.FC<ContactProps> = ({ onCopy, onShowToast }) 
             className="p-4 rounded-xl bg-[#141d2f] border border-[#1e293b]/60 flex flex-col gap-3 font-mono text-xs holo-card"
             onSubmit={handleFormSubmit}
           >
-            <div className="flex justify-between items-center text-[10px] text-[#64748b] pb-1 border-b border-[#1e293b]/40">
-              <span>RFC 5322 PAYLOAD DISPATCH CONSOLE</span>
+            <div className="flex justify-between items-center text-xs pb-1.5 border-b border-[#1e293b]/40">
+              <span className="font-semibold text-[#f1f5f9] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-[#06b6d4]">send</span>
+                Direct Message Console
+              </span>
               <span className="text-[#06b6d4] font-bold">raghavendraillale@gmail.com</span>
             </div>
 

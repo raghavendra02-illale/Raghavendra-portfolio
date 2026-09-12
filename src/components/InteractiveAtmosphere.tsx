@@ -1,433 +1,221 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useEffect, useRef } from 'react';
+import { playPopSound } from '../utils/audioFx';
 
-export type AtmosphereMode = 'bubbles' | 'sky' | 'water';
+export type AtmosphereMode = 'circuits' | 'radar' | 'sky' | 'aurora';
 
-interface Particle {
+interface InteractiveAtmosphereProps {
+  mode: AtmosphereMode;
+  onModeChange?: (mode: AtmosphereMode) => void;
+  isLight?: boolean;
+}
+
+interface CircuitNode {
   x: number;
   y: number;
   vx: number;
   vy: number;
   radius: number;
-  maxRadius?: number;
-  alpha: number;
-  maxAlpha: number;
+  baseRadius: number;
   color: string;
   glowColor: string;
-  wobbleSpeed: number;
-  wobbleOffset: number;
-  wobbleAmplitude: number;
+  pulsePhase: number;
+  pulseSpeed: number;
+  isTemporary?: boolean;
+  life?: number;
+  maxLife?: number;
+}
+
+interface CircuitDataPacket {
+  nodeAIndex: number;
+  nodeBIndex: number;
+  progress: number;
+  speed: number;
+  color: string;
+}
+
+interface RadarPing {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+  color: string;
+  rings: number;
+}
+
+interface StarNode {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  baseRadius: number;
+  color: string;
+  twinklePhase: number;
+  twinkleSpeed: number;
+  clusterId: number;
+}
+
+interface MeteorTrail {
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  len: number;
+  alpha: number;
   life: number;
   maxLife: number;
-  type: 'bubble' | 'star' | 'raindrop' | 'ripple' | 'spark';
-  sparkle?: number;
-  shootingAngle?: number;
+  color: string;
 }
 
-interface InteractiveAtmosphereProps {
-  mode: AtmosphereMode;
-  onModeChange?: (mode: AtmosphereMode) => void;
+interface AuroraWave {
+  baseY: number;
+  amplitude: number;
+  frequency: number;
+  speed: number;
+  phase: number;
+  color: string;
+  lineWidth: number;
 }
 
-// Synthesize pleasant, organic bubble pop / water drop chime using Web Audio API
-class AudioSynthesizer {
-  private ctx: AudioContext | null = null;
-  private enabled: boolean = false;
-
-  public setEnabled(enabled: boolean) {
-    this.enabled = enabled;
-    if (enabled && !this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
-      }
-    }
-    if (this.ctx && this.ctx.state === 'suspended' && enabled) {
-      this.ctx.resume();
-    }
-  }
-
-  public isEnabled() {
-    return this.enabled;
-  }
-
-  public playBubblePop() {
-    if (!this.enabled || !this.ctx) return;
-    try {
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      // Pitch sweep mimicking water bubble detachment / surface pop
-      const startFreq = 480 + Math.random() * 320;
-      const endFreq = startFreq + 280 + Math.random() * 150;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(startFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.08);
-
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.12);
-    } catch {
-      // Audio autoplay policy catch
-    }
-  }
-
-  public playWaterDrop() {
-    if (!this.enabled || !this.ctx) return;
-    try {
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sine';
-      const baseFreq = 800 + Math.random() * 400;
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.05);
-
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.18);
-    } catch {
-      // Audio autoplay policy catch
-    }
-  }
-}
-
-const audioSynth = new AudioSynthesizer();
-
-const PALETTE = {
+const PALETTE_DARK = {
   cyan: 'rgba(6, 182, 212, ',
   emerald: 'rgba(16, 185, 129, ',
-  violet: 'rgba(139, 92, 246, ',
   sky: 'rgba(56, 189, 248, ',
-  pink: 'rgba(244, 63, 94, ',
+  blue: 'rgba(59, 130, 246, ',
+  violet: 'rgba(139, 92, 246, ',
   amber: 'rgba(245, 158, 11, ',
+  white: 'rgba(255, 255, 255, ',
+};
+
+const PALETTE_LIGHT = {
+  cyan: 'rgba(2, 132, 199, ',
+  emerald: 'rgba(5, 150, 105, ',
+  sky: 'rgba(14, 165, 233, ',
+  blue: 'rgba(37, 99, 235, ',
+  violet: 'rgba(124, 58, 237, ',
+  amber: 'rgba(217, 119, 6, ',
+  white: 'rgba(15, 23, 42, ',
 };
 
 export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
   mode,
-  onModeChange,
+  isLight: propIsLight,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const ripplesRef = useRef<Particle[]>([]);
-  const ambientSpawnerRef = useRef<number>(0);
-  const pointerRef = useRef<{ x: number; y: number; active: boolean; lastSpawn: number }>({
-    x: -1000,
-    y: -1000,
+  const nodesRef = useRef<CircuitNode[]>([]);
+  const packetsRef = useRef<CircuitDataPacket[]>([]);
+  const pingsRef = useRef<RadarPing[]>([]);
+  const starsRef = useRef<StarNode[]>([]);
+  const meteorsRef = useRef<MeteorTrail[]>([]);
+  const auroraWavesRef = useRef<AuroraWave[]>([]);
+  const radarAngleRef = useRef<number>(0);
+  const timeRef = useRef<number>(0);
+  const pointerRef = useRef<{
+    x: number;
+    y: number;
+    active: boolean;
+    lastMove: number;
+  }>({
+    x: -2000,
+    y: -2000,
     active: false,
-    lastSpawn: 0,
+    lastMove: 0,
   });
 
-  const [popCount, setPopCount] = useState<number>(0);
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
-  const [controlsExpanded, setControlsExpanded] = useState<boolean>(true);
-  const [lastBurstTime, setLastBurstTime] = useState<number>(0);
+  // Spawn visual shockwave or starburst or aurora ripple on tap/click (Zero words!)
+  const spawnInteractionFX = (x: number, y: number) => {
+    const isLight =
+      propIsLight ??
+      (typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('light'));
+    const palette = isLight ? PALETTE_LIGHT : PALETTE_DARK;
 
-  // Toggle synthesized audio
-  const handleToggleAudio = () => {
-    const next = !audioEnabled;
-    setAudioEnabled(next);
-    audioSynth.setEnabled(next);
-    if (next) {
-      audioSynth.playBubblePop();
-    }
-  };
-
-  // Helper to spawn water ripple on click/tap
-  const spawnRipple = useCallback((x: number, y: number, colorType: 'cyan' | 'emerald' | 'violet' = 'cyan') => {
-    ripplesRef.current.push({
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      radius: 2,
-      maxRadius: 24 + Math.random() * 12,
-      alpha: 0.65,
-      maxAlpha: 0.65,
-      color: PALETTE[colorType],
-      glowColor: PALETTE[colorType],
-      wobbleSpeed: 0,
-      wobbleOffset: 0,
-      wobbleAmplitude: 0,
-      life: 0,
-      maxLife: 35,
-      type: 'ripple',
-    });
-  }, []);
-
-  // Spawn dainty, small bubbles with cluster prevention so clicking multiple times never fills the screen
-  const spawnBubbleBurst = useCallback((x: number, y: number, count = 3, isTap = true) => {
-    const colors: (keyof typeof PALETTE)[] = ['cyan', 'sky', 'emerald', 'violet'];
-
-    // 1. Proximity check: If user taps repeatedly in the same area (< 45px) and there are already bubbles,
-    // POP the existing ones instead of stacking more!
-    const nearbyBubbles = particlesRef.current.filter(
-      (p) => p.type === 'bubble' && Math.hypot(p.x - x, p.y - y) < 45
-    );
-
-    if (nearbyBubbles.length >= 3) {
-      // Pop existing nearby bubbles into subtle micro-motes
-      for (const b of nearbyBubbles) {
-        b.life = b.maxLife; // trigger removal
-      }
-      spawnRipple(x, y, 'cyan');
-      audioSynth.playBubblePop();
-      return;
-    }
-
-    // 2. Strict global bubble ceiling: Never allow more than 20 bubbles on screen simultaneously
-    const totalCurrentBubbles = particlesRef.current.filter((p) => p.type === 'bubble').length;
-    if (totalCurrentBubbles >= 20) {
-      // Retire oldest bubbles to make room
-      let removeCount = totalCurrentBubbles - 17;
-      for (let i = 0; i < particlesRef.current.length && removeCount > 0; i++) {
-        if (particlesRef.current[i].type === 'bubble') {
-          particlesRef.current.splice(i, 1);
-          i--;
-          removeCount--;
-        }
-      }
-    }
-
-    // 3. Spawn only 2 to 3 small, dainty bubbles (size 2.8px to 6.2px)
-    const spawnCount = Math.min(count, 3);
-    for (let i = 0; i < spawnCount; i++) {
-      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.8; // Mostly upward arc
-      const speed = isTap ? 0.9 + Math.random() * 1.6 : 0.6 + Math.random() * 1.0;
-      const chosenColor = colors[Math.floor(Math.random() * colors.length)];
-      // Small, delicate radius (between 2.8px and 6.0px)
-      const radius = 2.8 + Math.random() * 3.2;
-
-      particlesRef.current.push({
-        x: x + (Math.random() - 0.5) * 12,
-        y: y + (Math.random() - 0.5) * 12,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.2, // Upward buoyancy
-        radius,
+    if (mode === 'circuits') {
+      pingsRef.current.push({
+        x,
+        y,
+        radius: 4,
+        maxRadius: 65 + Math.random() * 25,
         alpha: 0.85,
-        maxAlpha: 0.85,
-        color: PALETTE[chosenColor],
-        glowColor: PALETTE[chosenColor],
-        wobbleSpeed: 0.04 + Math.random() * 0.04,
-        wobbleOffset: Math.random() * Math.PI * 2,
-        wobbleAmplitude: 0.8 + Math.random() * 1.2,
-        life: 0,
-        maxLife: 75 + Math.random() * 45, // Clean, fast dissipation (~1.2 - 2 seconds)
-        type: 'bubble',
+        color: palette.cyan,
+        rings: 2,
       });
-    }
 
-    // Spawn 1 or 2 tiny micro-motes
-    for (let j = 0; j < 2; j++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 0.8 + Math.random() * 1.5;
-      particlesRef.current.push({
+      // Spawn dynamic high-energy temporary nodes
+      for (let i = 0; i < 2; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 1.2;
+        nodesRef.current.push({
+          x: x + (Math.random() - 0.5) * 14,
+          y: y + (Math.random() - 0.5) * 14,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 2.2,
+          baseRadius: 2.2,
+          color: palette.cyan,
+          glowColor: palette.cyan,
+          pulsePhase: 0,
+          pulseSpeed: 0.05,
+          isTemporary: true,
+          life: 0,
+          maxLife: 180,
+        });
+      }
+    } else if (mode === 'radar') {
+      pingsRef.current.push({
+        x,
+        y,
+        radius: 6,
+        maxRadius: 110 + Math.random() * 40,
+        alpha: 0.95,
+        color: palette.emerald,
+        rings: 3,
+      });
+    } else if (mode === 'sky') {
+      // Shooting star meteor streak radiating from tap
+      const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.8;
+      const speed = 7 + Math.random() * 6;
+      meteorsRef.current.push({
+        startX: x,
+        startY: y,
         x,
         y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        radius: 0.8 + Math.random() * 0.8,
-        alpha: 0.9,
-        maxAlpha: 0.9,
-        color: PALETTE.sky,
-        glowColor: PALETTE.cyan,
-        wobbleSpeed: 0.1,
-        wobbleOffset: 0,
-        wobbleAmplitude: 0.3,
+        len: 40 + Math.random() * 50,
+        alpha: 1,
         life: 0,
-        maxLife: 25 + Math.random() * 15,
-        type: 'spark',
+        maxLife: 45,
+        color: isLight ? 'rgba(37, 99, 235, ' : 'rgba(186, 230, 253, ',
+      });
+
+      // Star sparkle ripple
+      pingsRef.current.push({
+        x,
+        y,
+        radius: 3,
+        maxRadius: 55,
+        alpha: 0.8,
+        color: palette.sky,
+        rings: 1,
+      });
+    } else if (mode === 'aurora') {
+      // Fluid quantum wave ripple
+      pingsRef.current.push({
+        x,
+        y,
+        radius: 4,
+        maxRadius: 90 + Math.random() * 30,
+        alpha: 0.85,
+        color: palette.violet,
+        rings: 2,
       });
     }
+  };
 
-    spawnRipple(x, y, 'cyan');
-    setPopCount((prev) => prev + spawnCount);
-    setLastBurstTime(Date.now());
-
-    if (mode === 'water') {
-      audioSynth.playWaterDrop();
-    } else {
-      audioSynth.playBubblePop();
-    }
-  }, [mode, spawnRipple]);
-
-  // Spawn celestial shooting star
-  const spawnShootingStar = useCallback((canvasWidth: number) => {
-    const x = Math.random() * canvasWidth;
-    const y = Math.random() * 200;
-    const angle = (Math.PI / 4) + (Math.random() - 0.5) * 0.3; // roughly 45 degrees
-    const speed = 9 + Math.random() * 7;
-
-    particlesRef.current.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      radius: 2.2 + Math.random() * 1.5,
-      alpha: 1,
-      maxAlpha: 1,
-      color: 'rgba(255, 255, 255, ',
-      glowColor: PALETTE.cyan,
-      wobbleSpeed: 0,
-      wobbleOffset: 0,
-      wobbleAmplitude: 0,
-      life: 0,
-      maxLife: 50 + Math.random() * 30,
-      type: 'spark',
-      shootingAngle: angle,
-    });
-  }, []);
-
-  // Global Pointer Events listener so clicking or touching anywhere on screen creates responsive FX
-  useEffect(() => {
-    const handlePointerDown = (e: PointerEvent) => {
-      // Spawn only 2-3 small delicate bubbles / droplets at pointer location
-      spawnBubbleBurst(e.clientX, e.clientY, mode === 'sky' ? 4 : 3, true);
-    };
-
-    const handlePointerMove = (e: PointerEvent) => {
-      pointerRef.current.x = e.clientX;
-      pointerRef.current.y = e.clientY;
-
-      const now = performance.now();
-      // Throttle trail emissions to every 180ms and ONLY when pointer is pressed
-      if (pointerRef.current.active && now - pointerRef.current.lastSpawn > 180) {
-        pointerRef.current.lastSpawn = now;
-
-        const currentBubbleCount = particlesRef.current.filter((p) => p.type === 'bubble').length;
-
-        if (mode === 'bubbles' && currentBubbleCount < 14) {
-          // Single dainty micro-bubble trail
-          particlesRef.current.push({
-            x: e.clientX + (Math.random() - 0.5) * 6,
-            y: e.clientY + (Math.random() - 0.5) * 6,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: -1.2 - Math.random() * 0.8,
-            radius: 2.2 + Math.random() * 2.2, // Small dainty size
-            alpha: 0.75,
-            maxAlpha: 0.75,
-            color: PALETTE.cyan,
-            glowColor: PALETTE.sky,
-            wobbleSpeed: 0.05,
-            wobbleOffset: Math.random() * Math.PI,
-            wobbleAmplitude: 0.8,
-            life: 0,
-            maxLife: 50 + Math.random() * 25,
-            type: 'bubble',
-          });
-        } else if (mode === 'sky') {
-          // Stardust trail
-          particlesRef.current.push({
-            x: e.clientX,
-            y: e.clientY,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4,
-            radius: 1.0 + Math.random() * 1.2,
-            alpha: 0.8,
-            maxAlpha: 0.8,
-            color: PALETTE.violet,
-            glowColor: PALETTE.cyan,
-            wobbleSpeed: 0,
-            wobbleOffset: 0,
-            wobbleAmplitude: 0,
-            life: 0,
-            maxLife: 35,
-            type: 'spark',
-          });
-        } else if (mode === 'water') {
-          // Water ripple trail
-          if (Math.random() > 0.6) {
-            spawnRipple(e.clientX, e.clientY, 'sky');
-          }
-        }
-      }
-    };
-
-    const handlePointerUp = () => {
-      pointerRef.current.active = false;
-    };
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches && e.touches.length > 0) {
-        const t = e.touches[0];
-        // Spawn only 2-3 small bubbles on touch
-        spawnBubbleBurst(t.clientX, t.clientY, mode === 'sky' ? 4 : 3, true);
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches && e.touches.length > 0) {
-        const t = e.touches[0];
-        pointerRef.current.x = t.clientX;
-        pointerRef.current.y = t.clientY;
-        pointerRef.current.active = true;
-
-        const now = performance.now();
-        if (now - pointerRef.current.lastSpawn > 200) {
-          pointerRef.current.lastSpawn = now;
-          const currentBubbleCount = particlesRef.current.filter((p) => p.type === 'bubble').length;
-          if (mode === 'bubbles' && currentBubbleCount < 14) {
-            particlesRef.current.push({
-              x: t.clientX + (Math.random() - 0.5) * 6,
-              y: t.clientY + (Math.random() - 0.5) * 6,
-              vx: (Math.random() - 0.5) * 0.5,
-              vy: -1.2 - Math.random() * 0.8,
-              radius: 2.2 + Math.random() * 2.2,
-              alpha: 0.75,
-              maxAlpha: 0.75,
-              color: PALETTE.cyan,
-              glowColor: PALETTE.sky,
-              wobbleSpeed: 0.05,
-              wobbleOffset: Math.random() * Math.PI,
-              wobbleAmplitude: 0.8,
-              life: 0,
-              maxLife: 50,
-              type: 'bubble',
-            });
-          }
-        }
-      }
-    };
-
-    const handleCustomBurst = (e: Event) => {
-      const ce = e as CustomEvent<{ x?: number; y?: number; count?: number }>;
-      const cx = ce.detail?.x ?? window.innerWidth / 2;
-      const cy = ce.detail?.y ?? window.innerHeight / 3;
-      const count = ce.detail?.count ? Math.min(ce.detail.count, 4) : 4;
-      spawnBubbleBurst(cx, cy, count, true);
-    };
-
-    window.addEventListener('pointerdown', handlePointerDown, { passive: true });
-    window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    window.addEventListener('pointerup', handlePointerUp, { passive: true });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('burst-bubbles', handleCustomBurst as EventListener);
-
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('burst-bubbles', handleCustomBurst as EventListener);
-    };
-  }, [mode, spawnBubbleBurst, spawnRipple]);
-
-  // Main Canvas Render & Animation Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -435,378 +223,641 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
     if (!ctx) return;
 
     let animId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+
+    const isLight =
+      propIsLight ??
+      (typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('light'));
+    const palette = isLight ? PALETTE_LIGHT : PALETTE_DARK;
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const isMobile = width < 768;
+
+      // 1. Initialise Circuits Mode nodes
+      const nodeCount = isMobile ? 24 : 44;
+      nodesRef.current = [];
+      const nodeColors: (keyof typeof PALETTE_DARK)[] = ['cyan', 'emerald', 'sky'];
+      for (let i = 0; i < nodeCount; i++) {
+        const col = nodeColors[Math.floor(Math.random() * nodeColors.length)];
+        nodesRef.current.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.45,
+          vy: (Math.random() - 0.5) * 0.45,
+          radius: 1.8 + Math.random() * 1.6,
+          baseRadius: 1.8 + Math.random() * 1.6,
+          color: palette[col],
+          glowColor: palette[col],
+          pulsePhase: Math.random() * Math.PI * 2,
+          pulseSpeed: 0.02 + Math.random() * 0.03,
+        });
+      }
+
+      // 2. Initialise Sky Mode stars and constellations
+      const starCount = isMobile ? 48 : 88;
+      starsRef.current = [];
+      const starColors = isLight
+        ? ['rgba(37, 99, 235, ', 'rgba(2, 132, 199, ', 'rgba(124, 58, 237, ']
+        : ['rgba(255, 255, 255, ', 'rgba(186, 230, 253, ', 'rgba(253, 230, 138, ', 'rgba(167, 139, 250, '];
+
+      for (let i = 0; i < starCount; i++) {
+        const col = starColors[Math.floor(Math.random() * starColors.length)];
+        starsRef.current.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          radius: 1.2 + Math.random() * 1.6,
+          baseRadius: 1.2 + Math.random() * 1.6,
+          color: col,
+          twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: 0.02 + Math.random() * 0.04,
+          clusterId: Math.floor(Math.random() * 5),
+        });
+      }
+
+      // 3. Initialise Aurora Wave harmonics (Pure visual wave ribbons, zero words)
+      auroraWavesRef.current = [
+        {
+          baseY: height * 0.25,
+          amplitude: isMobile ? 35 : 55,
+          frequency: 0.002,
+          speed: 0.015,
+          phase: 0,
+          color: isLight ? 'rgba(2, 132, 199, ' : 'rgba(6, 182, 212, ',
+          lineWidth: isMobile ? 1.5 : 2,
+        },
+        {
+          baseY: height * 0.45,
+          amplitude: isMobile ? 45 : 75,
+          frequency: 0.0016,
+          speed: 0.012,
+          phase: 1.8,
+          color: isLight ? 'rgba(124, 58, 237, ' : 'rgba(139, 92, 246, ',
+          lineWidth: isMobile ? 1.8 : 2.4,
+        },
+        {
+          baseY: height * 0.65,
+          amplitude: isMobile ? 40 : 65,
+          frequency: 0.0022,
+          speed: 0.018,
+          phase: 3.4,
+          color: isLight ? 'rgba(5, 150, 105, ' : 'rgba(16, 185, 129, ',
+          lineWidth: isMobile ? 1.5 : 2,
+        },
+        {
+          baseY: height * 0.82,
+          amplitude: isMobile ? 30 : 50,
+          frequency: 0.0018,
+          speed: 0.01,
+          phase: 5.1,
+          color: isLight ? 'rgba(37, 99, 235, ' : 'rgba(56, 189, 248, ',
+          lineWidth: isMobile ? 1.2 : 1.8,
+        },
+      ];
     };
 
+    handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Initial population of ambient particles
-    particlesRef.current = [];
-    ripplesRef.current = [];
+    // Cross-device pointer events (Mouse, Pen, Touch)
+    const onPointerDown = (e: PointerEvent) => {
+      pointerRef.current.x = e.clientX;
+      pointerRef.current.y = e.clientY;
+      pointerRef.current.active = true;
+      pointerRef.current.lastMove = performance.now();
+      spawnInteractionFX(e.clientX, e.clientY);
+      playPopSound();
+    };
 
-    // Mode-specific initial populations
-    if (mode === 'sky') {
-      // 120 twinkling sky stars
-      for (let i = 0; i < 110; i++) {
-        particlesRef.current.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.12,
-          vy: (Math.random() - 0.5) * 0.12,
-          radius: 0.8 + Math.random() * 2.2,
-          alpha: 0.3 + Math.random() * 0.7,
-          maxAlpha: 0.3 + Math.random() * 0.7,
-          color: Math.random() > 0.3 ? 'rgba(255, 255, 255, ' : PALETTE.sky,
-          glowColor: PALETTE.cyan,
-          wobbleSpeed: 0.02 + Math.random() * 0.04,
-          wobbleOffset: Math.random() * Math.PI * 2,
-          wobbleAmplitude: 0.4,
-          life: 0,
-          maxLife: 100000,
-          type: 'star',
-          sparkle: Math.random() * Math.PI * 2,
-        });
-      }
-    } else if (mode === 'bubbles') {
-      // Normal ambient floating bubbles (moderate size: 6.5px to 13px)
-      for (let i = 0; i < 8; i++) {
-        const colors: (keyof typeof PALETTE)[] = ['cyan', 'emerald', 'violet', 'sky'];
-        const col = colors[Math.floor(Math.random() * colors.length)];
-        particlesRef.current.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: -0.5 - Math.random() * 0.8,
-          radius: 6.5 + Math.random() * 6.5, // Bit more large for normal bubbles (6.5px - 13px)
-          alpha: 0.45 + Math.random() * 0.35,
-          maxAlpha: 0.8,
-          color: PALETTE[col],
-          glowColor: PALETTE[col],
-          wobbleSpeed: 0.02 + Math.random() * 0.03,
-          wobbleOffset: Math.random() * Math.PI * 2,
-          wobbleAmplitude: 1.0 + Math.random() * 1.5,
-          life: Math.random() * 120,
-          maxLife: 200 + Math.random() * 100,
-          type: 'bubble',
-        });
-      }
-    } else if (mode === 'water') {
-      // Ambient rain drops
-      for (let i = 0; i < 40; i++) {
-        particlesRef.current.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: 6 + Math.random() * 8,
-          radius: 1.5 + Math.random() * 1.5,
-          alpha: 0.35 + Math.random() * 0.45,
-          maxAlpha: 0.8,
-          color: PALETTE.sky,
-          glowColor: PALETTE.cyan,
-          wobbleSpeed: 0,
-          wobbleOffset: 0,
-          wobbleAmplitude: 0,
-          life: 0,
-          maxLife: 200,
-          type: 'raindrop',
-        });
-      }
-    }
+    const onPointerMove = (e: PointerEvent) => {
+      pointerRef.current.x = e.clientX;
+      pointerRef.current.y = e.clientY;
+      pointerRef.current.active = true;
+      pointerRef.current.lastMove = performance.now();
+    };
 
-    let frameCount = 0;
+    const onPointerUp = () => {
+      pointerRef.current.active = false;
+    };
 
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 0) {
+        const t = e.touches[0];
+        pointerRef.current.x = t.clientX;
+        pointerRef.current.y = t.clientY;
+        pointerRef.current.active = true;
+        pointerRef.current.lastMove = performance.now();
+        spawnInteractionFX(t.clientX, t.clientY);
+        playPopSound();
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 0) {
+        const t = e.touches[0];
+        pointerRef.current.x = t.clientX;
+        pointerRef.current.y = t.clientY;
+        pointerRef.current.active = true;
+        pointerRef.current.lastMove = performance.now();
+      }
+    };
+
+    const onTouchEnd = () => {
+      pointerRef.current.active = false;
+    };
+
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    let lastAmbientTime = performance.now();
+
+    // Main animation loop
     const render = () => {
-      frameCount++;
       ctx.clearRect(0, 0, width, height);
+      timeRef.current += 0.02;
 
       const pointer = pointerRef.current;
-
-      // Ambient automatic spawning based on current mode
-      ambientSpawnerRef.current++;
-      const currentActiveBubbles = particlesRef.current.filter((p) => p.type === 'bubble').length;
-
-      // Only spawn 1 ambient bubble every 85 frames (~1.4s) if ambient bubbles < 8
-      if (mode === 'bubbles' && ambientSpawnerRef.current % 85 === 0 && currentActiveBubbles < 8) {
-        // Subtle upward stream from bottom
-        const colors: (keyof typeof PALETTE)[] = ['cyan', 'emerald', 'violet', 'sky'];
-        const col = colors[Math.floor(Math.random() * colors.length)];
-        particlesRef.current.push({
-          x: Math.random() * width,
-          y: height + 15,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: -0.6 - Math.random() * 0.8,
-          radius: 6.5 + Math.random() * 6.5, // Bit more large for normal bubbles
-          alpha: 0.55,
-          maxAlpha: 0.8,
-          color: PALETTE[col],
-          glowColor: PALETTE[col],
-          wobbleSpeed: 0.025,
-          wobbleOffset: Math.random() * Math.PI * 2,
-          wobbleAmplitude: 1.0 + Math.random() * 1.2,
-          life: 0,
-          maxLife: 220 + Math.random() * 80,
-          type: 'bubble',
-        });
-      } else if (mode === 'water' && ambientSpawnerRef.current % 4 === 0) {
-        // Raindrops from top
-        particlesRef.current.push({
-          x: Math.random() * width,
-          y: -10,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: 7 + Math.random() * 7,
-          radius: 1.2 + Math.random() * 1.4,
-          alpha: 0.4 + Math.random() * 0.4,
-          maxAlpha: 0.8,
-          color: PALETTE.sky,
-          glowColor: PALETTE.cyan,
-          wobbleSpeed: 0,
-          wobbleOffset: 0,
-          wobbleAmplitude: 0,
-          life: 0,
-          maxLife: 200,
-          type: 'raindrop',
-        });
-      } else if (mode === 'sky' && ambientSpawnerRef.current % 140 === 0) {
-        // Random shooting star streak
-        spawnShootingStar(width);
+      const now = performance.now();
+      if (now - pointer.lastMove > 2500) {
+        pointer.active = false;
       }
 
-      // Constellation lines in Sky mode
-      if (mode === 'sky') {
-        const stars = particlesRef.current.filter((p) => p.type === 'star');
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i < stars.length; i++) {
-          for (let j = i + 1; j < stars.length; j++) {
-            const dx = stars[i].x - stars[j].x;
-            const dy = stars[i].y - stars[j].y;
+      const activeIsLight =
+        propIsLight ??
+        (typeof document !== 'undefined' &&
+          document.documentElement.classList.contains('light'));
+      const activePalette = activeIsLight ? PALETTE_LIGHT : PALETTE_DARK;
+
+      // ==========================================
+      // MODE 1: CYBERNETIC CIRCUITS & NEURAL MESH
+      // ==========================================
+      if (mode === 'circuits') {
+        const nodes = nodesRef.current;
+        const connectDist = width < 768 ? 95 : 125;
+        const connectDistSq = connectDist * connectDist;
+
+        // 1. Update node physics
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const n = nodes[i];
+          n.x += n.vx;
+          n.y += n.vy;
+
+          if (n.x < 10) {
+            n.x = 10;
+            n.vx = Math.abs(n.vx);
+          } else if (n.x > width - 10) {
+            n.x = width - 10;
+            n.vx = -Math.abs(n.vx);
+          }
+          if (n.y < 10) {
+            n.y = 10;
+            n.vy = Math.abs(n.vy);
+          } else if (n.y > height - 10) {
+            n.y = height - 10;
+            n.vy = -Math.abs(n.vy);
+          }
+
+          if (pointer.active) {
+            const dx = pointer.x - n.x;
+            const dy = pointer.y - n.y;
             const dist = Math.hypot(dx, dy);
-            if (dist < 90) {
-              const alpha = (1 - dist / 90) * 0.16;
-              ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
-              ctx.beginPath();
-              ctx.moveTo(stars[i].x, stars[i].y);
-              ctx.lineTo(stars[j].x, stars[j].y);
-              ctx.stroke();
+            if (dist < 130 && dist > 1) {
+              const pull = (1 - dist / 130) * 0.45;
+              n.vx += (dx / dist) * pull;
+              n.vy += (dy / dist) * pull;
+            }
+          }
+
+          n.vx *= 0.985;
+          n.vy *= 0.985;
+
+          n.pulsePhase += n.pulseSpeed;
+          const pulse = Math.sin(n.pulsePhase) * 0.4;
+          n.radius = Math.max(1, n.baseRadius + pulse);
+
+          if (n.isTemporary && n.life !== undefined && n.maxLife !== undefined) {
+            n.life++;
+            if (n.life >= n.maxLife) {
+              nodes.splice(i, 1);
+              continue;
             }
           }
         }
-      }
 
-      // Render expanding ripples
-      for (let i = ripplesRef.current.length - 1; i >= 0; i--) {
-        const rip = ripplesRef.current[i];
-        rip.life++;
-        rip.radius += 1.8;
-        rip.alpha = (1 - rip.life / rip.maxLife) * rip.maxAlpha;
+        // 2. Draw circuit traces
+        ctx.lineWidth = activeIsLight ? 1 : 0.8;
+        for (let i = 0; i < nodes.length; i++) {
+          const a = nodes[i];
+          for (let j = i + 1; j < nodes.length; j++) {
+            const b = nodes[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const distSq = dx * dx + dy * dy;
 
-        if (rip.life >= rip.maxLife) {
-          ripplesRef.current.splice(i, 1);
-          continue;
+            if (distSq < connectDistSq) {
+              const dist = Math.sqrt(distSq);
+              const alpha = (1 - dist / connectDist) * (activeIsLight ? 0.35 : 0.28);
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `${a.color}${alpha})`;
+              ctx.stroke();
+
+              // Spawn data packets
+              if (
+                packetsRef.current.length < 8 &&
+                Math.random() < 0.0006
+              ) {
+                packetsRef.current.push({
+                  nodeAIndex: i,
+                  nodeBIndex: j,
+                  progress: 0,
+                  speed: 0.02 + Math.random() * 0.03,
+                  color: a.color,
+                });
+              }
+            }
+          }
         }
 
-        // Inner glowing ring
+        // 3. Update & draw data packets
+        for (let p = packetsRef.current.length - 1; p >= 0; p--) {
+          const pkt = packetsRef.current[p];
+          pkt.progress += pkt.speed;
+
+          if (pkt.progress >= 1 || !nodes[pkt.nodeAIndex] || !nodes[pkt.nodeBIndex]) {
+            packetsRef.current.splice(p, 1);
+            continue;
+          }
+
+          const nA = nodes[pkt.nodeAIndex];
+          const nB = nodes[pkt.nodeBIndex];
+          const px = nA.x + (nB.x - nA.x) * pkt.progress;
+          const py = nA.y + (nB.y - nA.y) * pkt.progress;
+
+          ctx.beginPath();
+          ctx.arc(px, py, 2, 0, Math.PI * 2);
+          ctx.fillStyle = `${pkt.color}0.95)`;
+          ctx.fill();
+        }
+
+        // 4. Draw circuit nodes
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `${n.color}0.85)`;
+          ctx.fill();
+        }
+      }
+
+      // ==========================================
+      // MODE 2: TACTICAL RADAR SWEEP (ZERO WORDS!)
+      // ==========================================
+      else if (mode === 'radar') {
+        const radarCenterX = width * 0.5;
+        const radarCenterY = height * 0.5;
+        const maxRadarR = Math.hypot(width, height) * 0.55;
+
+        radarAngleRef.current = (radarAngleRef.current + 0.016) % (Math.PI * 2);
+        const sweepAngle = radarAngleRef.current;
+
+        // Concentric distance rings
+        ctx.lineWidth = 1;
+        for (let r = 80; r < maxRadarR; r += 120) {
+          ctx.beginPath();
+          ctx.arc(radarCenterX, radarCenterY, r, 0, Math.PI * 2);
+          ctx.strokeStyle = activeIsLight ? 'rgba(2, 132, 199, 0.12)' : 'rgba(6, 182, 212, 0.09)';
+          ctx.stroke();
+        }
+
+        // Crosshairs
         ctx.beginPath();
-        ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `${rip.color}${rip.alpha * 0.8})`;
+        ctx.moveTo(radarCenterX, 0);
+        ctx.lineTo(radarCenterX, height);
+        ctx.moveTo(0, radarCenterY);
+        ctx.lineTo(width, radarCenterY);
+        ctx.strokeStyle = activeIsLight ? 'rgba(2, 132, 199, 0.14)' : 'rgba(6, 182, 212, 0.10)';
+        ctx.stroke();
+
+        // Sweeping beam wedge
+        const gradient = ctx.createRadialGradient(
+          radarCenterX,
+          radarCenterY,
+          10,
+          radarCenterX,
+          radarCenterY,
+          maxRadarR
+        );
+        gradient.addColorStop(0, activeIsLight ? 'rgba(5, 150, 105, 0.15)' : 'rgba(16, 185, 129, 0.22)');
+        gradient.addColorStop(1, 'transparent');
+
+        ctx.beginPath();
+        ctx.moveTo(radarCenterX, radarCenterY);
+        ctx.arc(radarCenterX, radarCenterY, maxRadarR, sweepAngle - 0.45, sweepAngle);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Sweeping radar front line
+        ctx.beginPath();
+        ctx.moveTo(radarCenterX, radarCenterY);
+        ctx.lineTo(
+          radarCenterX + Math.cos(sweepAngle) * maxRadarR,
+          radarCenterY + Math.sin(sweepAngle) * maxRadarR
+        );
+        ctx.strokeStyle = activeIsLight ? 'rgba(5, 150, 105, 0.45)' : 'rgba(16, 185, 129, 0.55)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Secondary soft echo ripple ring
-        if (rip.radius > 12) {
+        // Target blips on sweep (Clean geometric blips with rings - NO text/words)
+        const nodes = nodesRef.current;
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          const angleToNode = Math.atan2(n.y - radarCenterY, n.x - radarCenterX);
+          let diff = sweepAngle - angleToNode;
+          while (diff < 0) diff += Math.PI * 2;
+          while (diff >= Math.PI * 2) diff -= Math.PI * 2;
+
+          const blipAlpha = diff < 0.6 ? Math.max(0.2, 1 - diff / 0.6) : 0.18;
+
           ctx.beginPath();
-          ctx.arc(rip.x, rip.y, Math.max(0, rip.radius - 8), 0, Math.PI * 2);
-          ctx.strokeStyle = `${rip.color}${rip.alpha * 0.4})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
+          ctx.arc(n.x, n.y, 2.8, 0, Math.PI * 2);
+          ctx.fillStyle = activeIsLight
+            ? `rgba(5, 150, 105, ${blipAlpha * 0.9})`
+            : `rgba(16, 185, 129, ${blipAlpha})`;
+          ctx.fill();
+
+          if (diff < 0.28) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+            ctx.strokeStyle = activeIsLight
+              ? `rgba(2, 132, 199, ${blipAlpha * 0.85})`
+              : `rgba(6, 182, 212, ${blipAlpha * 0.85})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
         }
       }
 
-      // Render and update particles
-      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
-        const p = particlesRef.current[i];
-        p.life++;
+      // ==========================================
+      // MODE 3: DEEP SKY & CONSTELLATION PARTICLES
+      // ==========================================
+      else if (mode === 'sky') {
+        const stars = starsRef.current;
+        const maxDist = width < 768 ? 85 : 110;
+        const maxDistSq = maxDist * maxDist;
 
-        if (p.type === 'bubble') {
-          // Buoyant upward motion + horizontal sinusoidal wobble
-          p.vy -= 0.015; // Buoyant acceleration
-          p.vx *= 0.98;
-          p.vy *= 0.985;
-          p.x += p.vx + Math.sin(frameCount * p.wobbleSpeed + p.wobbleOffset) * p.wobbleAmplitude;
-          p.y += p.vy;
+        // Occasional natural shooting star
+        if (now - lastAmbientTime > 3800) {
+          lastAmbientTime = now;
+          if (Math.random() < 0.65) {
+            const startX = Math.random() * width * 0.8;
+            const startY = Math.random() * height * 0.35;
+            const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.5;
+            const speed = 8 + Math.random() * 6;
+            meteorsRef.current.push({
+              startX,
+              startY,
+              x: startX,
+              y: startY,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              len: 50 + Math.random() * 60,
+              alpha: 0.95,
+              life: 0,
+              maxLife: 40,
+              color: activeIsLight ? 'rgba(37, 99, 235, ' : 'rgba(186, 230, 253, ',
+            });
+          }
+        }
 
-          // Pointer interaction: bubbles gently push away from cursor/finger
-          if (pointer.active) {
-            const dx = p.x - pointer.x;
-            const dy = p.y - pointer.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 110 && dist > 0) {
-              const force = (1 - dist / 110) * 3.5;
-              p.vx += (dx / dist) * force;
-              p.vy += (dy / dist) * force;
+        // 1. Constellation links between close cluster stars
+        ctx.lineWidth = activeIsLight ? 0.9 : 0.75;
+        for (let i = 0; i < stars.length; i++) {
+          const a = stars[i];
+          for (let j = i + 1; j < stars.length; j++) {
+            const b = stars[j];
+            if (a.clusterId === b.clusterId) {
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const distSq = dx * dx + dy * dy;
+
+              if (distSq < maxDistSq) {
+                const dist = Math.sqrt(distSq);
+                const lineAlpha = (1 - dist / maxDist) * (activeIsLight ? 0.28 : 0.22);
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = activeIsLight
+                  ? `rgba(37, 99, 235, ${lineAlpha})`
+                  : `rgba(147, 197, 253, ${lineAlpha})`;
+                ctx.stroke();
+              }
+            }
+          }
+        }
+
+        // 2. Render stars with delicate twinkling
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          s.x += s.vx;
+          s.y += s.vy;
+
+          if (s.x < 0) s.x = width;
+          else if (s.x > width) s.x = 0;
+          if (s.y < 0) s.y = height;
+          else if (s.y > height) s.y = 0;
+
+          s.twinklePhase += s.twinkleSpeed;
+          const twinkle = 0.5 + Math.sin(s.twinklePhase) * 0.45;
+          const currentR = s.baseRadius * (0.8 + twinkle * 0.4);
+
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, currentR, 0, Math.PI * 2);
+          ctx.fillStyle = `${s.color}${twinkle * (activeIsLight ? 0.85 : 0.95)})`;
+          ctx.fill();
+
+          // Star cross spikes
+          if (s.baseRadius > 2.0 && twinkle > 0.75) {
+            const spikeLen = currentR * 2.2;
+            ctx.beginPath();
+            ctx.moveTo(s.x - spikeLen, s.y);
+            ctx.lineTo(s.x + spikeLen, s.y);
+            ctx.moveTo(s.x, s.y - spikeLen);
+            ctx.lineTo(s.x, s.y + spikeLen);
+            ctx.strokeStyle = `${s.color}${twinkle * 0.4})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+
+        // 3. Render meteor trails
+        for (let m = meteorsRef.current.length - 1; m >= 0; m--) {
+          const met = meteorsRef.current[m];
+          met.x += met.vx;
+          met.y += met.vy;
+          met.life++;
+
+          const progress = met.life / met.maxLife;
+          met.alpha = (1 - progress) * 0.95;
+
+          if (met.life >= met.maxLife) {
+            meteorsRef.current.splice(m, 1);
+            continue;
+          }
+
+          const tailX = met.x - (met.vx / Math.hypot(met.vx, met.vy)) * met.len;
+          const tailY = met.y - (met.vy / Math.hypot(met.vx, met.vy)) * met.len;
+
+          const meteorGrad = ctx.createLinearGradient(tailX, tailY, met.x, met.y);
+          meteorGrad.addColorStop(0, `${met.color}0)`);
+          meteorGrad.addColorStop(1, `${met.color}${met.alpha})`);
+
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(met.x, met.y);
+          ctx.strokeStyle = meteorGrad;
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          // Bright meteor head spark
+          ctx.beginPath();
+          ctx.arc(met.x, met.y, 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = activeIsLight ? '#1d4ed8' : '#ffffff';
+          ctx.fill();
+        }
+      }
+
+      // ==========================================
+      // MODE 4: AURORA HARMONIC WAVES (100% NON-TEXT)
+      // ==========================================
+      else if (mode === 'aurora') {
+        const waves = auroraWavesRef.current;
+        const t = timeRef.current;
+
+        for (let w = 0; w < waves.length; w++) {
+          const wave = waves[w];
+          wave.phase += wave.speed;
+
+          ctx.beginPath();
+          ctx.lineWidth = wave.lineWidth;
+
+          const step = width < 768 ? 16 : 10;
+          for (let x = 0; x <= width + step; x += step) {
+            // Harmonic sine calculation with secondary ripple
+            const baseSin = Math.sin(x * wave.frequency + wave.phase + w);
+            const harmonic = Math.sin(x * wave.frequency * 2.1 - wave.phase * 0.7) * 0.35;
+            
+            // Pointer gravity deflection on the waves
+            let pointerDeflect = 0;
+            if (pointer.active) {
+              const dx = x - pointer.x;
+              const pDist = Math.abs(dx);
+              if (pDist < 200) {
+                const pFactor = Math.cos((pDist / 200) * (Math.PI / 2));
+                pointerDeflect = (pointer.y - wave.baseY) * 0.4 * pFactor;
+              }
+            }
+
+            const y = wave.baseY + (baseSin + harmonic) * wave.amplitude + pointerDeflect;
+
+            if (x === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
             }
           }
 
-          // Fade out near end of life or if it reaches very top
-          const lifeRatio = p.life / p.maxLife;
-          const currentAlpha = Math.max(0, (1 - lifeRatio) * p.maxAlpha);
-
-          if (p.y < -p.radius * 2 || p.life >= p.maxLife) {
-            // Natural pop into micro splash
-            particlesRef.current.splice(i, 1);
-            continue;
-          }
-
-          // --- Draw Soap Bubble / Bioluminescent Orb ---
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-
-          // Translucent iridescent glass sphere fill
-          const grad = ctx.createRadialGradient(
-            p.x - p.radius * 0.3,
-            p.y - p.radius * 0.3,
-            p.radius * 0.1,
-            p.x,
-            p.y,
-            p.radius
-          );
-          grad.addColorStop(0, `rgba(255, 255, 255, ${currentAlpha * 0.45})`);
-          grad.addColorStop(0.4, `${p.color}${currentAlpha * 0.25})`);
-          grad.addColorStop(0.85, `${p.glowColor}${currentAlpha * 0.4})`);
-          grad.addColorStop(1, `${p.color}${currentAlpha * 0.85})`);
-
-          ctx.fillStyle = grad;
-          ctx.fill();
-
-          // Delicate glowing perimeter rim
-          ctx.lineWidth = Math.max(1, p.radius * 0.08);
-          ctx.strokeStyle = `${p.glowColor}${currentAlpha * 0.9})`;
+          // Subtle gradient opacity along the wave
+          const waveAlpha = activeIsLight ? 0.28 : 0.38;
+          ctx.strokeStyle = `${wave.color}${waveAlpha})`;
           ctx.stroke();
 
-          // Specular reflection glints
-          if (p.radius > 6) {
-            // Arc reflection for moderate normal bubbles
-            ctx.beginPath();
-            ctx.arc(
-              p.x - p.radius * 0.28,
-              p.y - p.radius * 0.28,
-              p.radius * 0.38,
-              Math.PI * 1.15,
-              Math.PI * 1.85
-            );
-            ctx.lineWidth = Math.max(1, p.radius * 0.1);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${currentAlpha * 0.85})`;
+          // Glow halo under the primary wave
+          if (w === 1 || w === 2) {
+            ctx.save();
+            ctx.lineWidth = wave.lineWidth * 2.8;
+            ctx.strokeStyle = `${wave.color}${waveAlpha * 0.25})`;
             ctx.stroke();
-
-            // Secondary tiny specular dot
-            ctx.beginPath();
-            ctx.arc(
-              p.x + p.radius * 0.32,
-              p.y + p.radius * 0.32,
-              Math.max(0.6, p.radius * 0.12),
-              0,
-              Math.PI * 2
-            );
-            ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.5})`;
-            ctx.fill();
-          } else if (p.radius >= 2.2) {
-            // Dainty single dot glint for small tap bubbles
-            ctx.beginPath();
-            ctx.arc(
-              p.x - p.radius * 0.32,
-              p.y - p.radius * 0.32,
-              Math.max(0.6, p.radius * 0.28),
-              0,
-              Math.PI * 2
-            );
-            ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.85})`;
-            ctx.fill();
-          }
-
-          ctx.restore();
-        } else if (p.type === 'star') {
-          // Twinkling celestial star
-          p.x += p.vx;
-          p.y += p.vy;
-
-          if (p.x < 0) p.x = width;
-          if (p.x > width) p.x = 0;
-          if (p.y < 0) p.y = height;
-          if (p.y > height) p.y = 0;
-
-          // Twinkle pulse
-          p.sparkle = (p.sparkle || 0) + 0.03;
-          const twinkle = 0.5 + Math.sin(p.sparkle) * 0.5;
-          const starAlpha = p.maxAlpha * (0.4 + twinkle * 0.6);
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius * (0.8 + twinkle * 0.4), 0, Math.PI * 2);
-          ctx.fillStyle = `${p.color}${starAlpha})`;
-          ctx.fill();
-
-          // Star glow halo on brighter stars
-          if (p.radius > 1.8) {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius * 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = `${p.glowColor}${starAlpha * 0.25})`;
-            ctx.fill();
-          }
-        } else if (p.type === 'raindrop') {
-          // Downward streaming cyber raindrop
-          p.y += p.vy;
-          p.x += p.vx;
-
-          // Draw speed streak
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x - p.vx * 1.5, p.y - p.vy * 1.8);
-          ctx.strokeStyle = `${p.color}${p.alpha})`;
-          ctx.lineWidth = p.radius;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-
-          // Water impact on hitting floor
-          if (p.y >= height - 20) {
-            spawnRipple(p.x, height - 15, 'sky');
-            particlesRef.current.splice(i, 1);
-            continue;
-          }
-        } else if (p.type === 'spark') {
-          // Burst spark / Shooting star trail
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vx *= 0.94;
-          p.vy *= 0.94;
-
-          const lifeRatio = p.life / p.maxLife;
-          const sparkAlpha = (1 - lifeRatio) * p.maxAlpha;
-
-          if (p.life >= p.maxLife) {
-            particlesRef.current.splice(i, 1);
-            continue;
-          }
-
-          if (p.shootingAngle !== undefined) {
-            // Shooting star with trailing tail
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x - p.vx * 4, p.y - p.vy * 4);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${sparkAlpha})`;
-            ctx.lineWidth = p.radius;
-            ctx.stroke();
-          } else {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `${p.color}${sparkAlpha})`;
-            ctx.fill();
+            ctx.restore();
           }
         }
+
+        // Drifting quantum spark particles along the ribbons
+        const nodes = nodesRef.current;
+        for (let i = 0; i < Math.min(nodes.length, 18); i++) {
+          const n = nodes[i];
+          n.x = (n.x + 0.35) % width;
+          const waveIdx = i % waves.length;
+          const assignedWave = waves[waveIdx];
+          const calculatedY =
+            assignedWave.baseY +
+            Math.sin(n.x * assignedWave.frequency + assignedWave.phase + waveIdx) *
+              assignedWave.amplitude;
+
+          ctx.beginPath();
+          ctx.arc(n.x, calculatedY, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = activeIsLight
+            ? `${assignedWave.color}0.75)`
+            : `${assignedWave.color}0.95)`;
+          ctx.fill();
+        }
+      }
+
+      // ==========================================
+      // SHARED TACTICAL PINGS & SHOCKWAVES
+      // ==========================================
+      for (let pIdx = pingsRef.current.length - 1; pIdx >= 0; pIdx--) {
+        const ping = pingsRef.current[pIdx];
+        ping.radius += 2.2;
+        const ratio = ping.radius / ping.maxRadius;
+        ping.alpha = Math.max(0, (1 - ratio) * 0.85);
+
+        if (ping.radius >= ping.maxRadius) {
+          pingsRef.current.splice(pIdx, 1);
+          continue;
+        }
+
+        // Concentric shockwave ring
+        ctx.beginPath();
+        ctx.arc(ping.x, ping.y, ping.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `${ping.color}${ping.alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Crosshairs ticks
+        const tickLen = 5;
+        ctx.beginPath();
+        ctx.moveTo(ping.x - ping.radius - tickLen, ping.y);
+        ctx.lineTo(ping.x - ping.radius + tickLen, ping.y);
+        ctx.moveTo(ping.x + ping.radius - tickLen, ping.y);
+        ctx.lineTo(ping.x + ping.radius + tickLen, ping.y);
+        ctx.moveTo(ping.x, ping.y - ping.radius - tickLen);
+        ctx.lineTo(ping.x, ping.y - ping.radius + tickLen);
+        ctx.moveTo(ping.x, ping.y + ping.radius - tickLen);
+        ctx.lineTo(ping.x, ping.y + ping.radius + tickLen);
+        ctx.strokeStyle = `${ping.color}${ping.alpha * 0.7})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
 
       animId = requestAnimationFrame(render);
@@ -817,130 +868,26 @@ export const InteractiveAtmosphere: React.FC<InteractiveAtmosphereProps> = ({
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [mode, spawnShootingStar, spawnRipple]);
+  }, [mode, propIsLight]);
+
+  const isLight =
+    propIsLight ??
+    (typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('light'));
 
   return (
-    <>
-      {/* Interactive FX Canvas Overlay (transparent, non-blocking click-through) */}
-      <canvas
-        ref={canvasRef}
-        className="fixed inset-0 pointer-events-none z-10 w-full h-full"
-        style={{ mixBlendMode: 'screen' }}
-      />
-
-      {/* Floating Interactive Atmosphere Control Dock */}
-      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2 font-mono text-xs select-none">
-        <AnimatePresence>
-          {controlsExpanded && (
-            <motion.div
-              initial={{ opacity: 0, y: 15, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.92 }}
-              transition={{ duration: 0.2 }}
-              className="p-3 rounded-2xl bg-[#0b101d]/90 backdrop-blur-xl border border-[#06b6d4]/40 shadow-2xl shadow-[#06b6d4]/15 flex flex-col gap-2.5 w-64 max-w-[90vw]"
-            >
-              {/* Header with Title & Audio Synth Toggle */}
-              <div className="flex items-center justify-between pb-2 border-b border-[#1e293b]">
-                <div className="flex items-center gap-1.5 text-[#06b6d4] font-bold">
-                  <span className="material-symbols-outlined text-[16px] animate-spin">
-                    motion_photos_on
-                  </span>
-                  <span>ATMOSPHERE FX</span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={handleToggleAudio}
-                    className={`px-2 py-0.5 rounded-md border text-[11px] flex items-center gap-1 transition-all cursor-pointer ${
-                      audioEnabled
-                        ? 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]'
-                        : 'bg-[#141d2f] border-[#1e293b] text-[#64748b] hover:text-[#94a3b8]'
-                    }`}
-                    title="Toggle synthesized bubble pop & water chimes"
-                  >
-                    <span className="material-symbols-outlined text-[13px]">
-                      {audioEnabled ? 'volume_up' : 'volume_off'}
-                    </span>
-                    <span>{audioEnabled ? 'SFX' : 'Mute'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Theme Mode Selector Buttons: Bubbles, Sky, Water Drops */}
-              <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => onModeChange?.('bubbles')}
-                  className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all cursor-pointer border ${
-                    mode === 'bubbles'
-                      ? 'bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4] shadow-md shadow-[#06b6d4]/20 font-bold'
-                      : 'bg-[#141d2f]/70 border-[#1e293b] text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#141d2f]'
-                  }`}
-                >
-                  <span className="text-base">🫧</span>
-                  <span>Bubbles</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onModeChange?.('sky')}
-                  className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all cursor-pointer border ${
-                    mode === 'sky'
-                      ? 'bg-[#8b5cf6]/20 border-[#8b5cf6] text-[#8b5cf6] shadow-md shadow-[#8b5cf6]/20 font-bold'
-                      : 'bg-[#141d2f]/70 border-[#1e293b] text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#141d2f]'
-                  }`}
-                >
-                  <span className="text-base">🌌</span>
-                  <span>Sky</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onModeChange?.('water')}
-                  className={`py-2 px-1 rounded-xl flex flex-col items-center gap-1 transition-all cursor-pointer border ${
-                    mode === 'water'
-                      ? 'bg-[#10b981]/20 border-[#10b981] text-[#10b981] shadow-md shadow-[#10b981]/20 font-bold'
-                      : 'bg-[#141d2f]/70 border-[#1e293b] text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#141d2f]'
-                  }`}
-                >
-                  <span className="text-base">💧</span>
-                  <span>Drops</span>
-                </button>
-              </div>
-
-              {/* Touch Anywhere Instruction & Pop Counter */}
-              <div className="pt-2 border-t border-[#1e293b] flex items-center justify-between text-[10px] text-[#94a3b8]">
-                <span className="flex items-center gap-1 text-[#38bdf8]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#38bdf8] animate-ping" />
-                  Tap screen anywhere!
-                </span>
-                <span className="text-[#64748b]">
-                  Spawned: <strong className="text-[#f1f5f9]">{popCount}</strong>
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Toggle Pill Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          type="button"
-          onClick={() => setControlsExpanded((prev) => !prev)}
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#0b101d]/90 backdrop-blur-md border border-[#06b6d4]/50 text-[#06b6d4] shadow-xl hover:border-[#06b6d4] hover:shadow-[#06b6d4]/20 transition-all cursor-pointer"
-        >
-          <span className="text-sm">
-            {mode === 'bubbles' ? '🫧' : mode === 'sky' ? '🌌' : '💧'}
-          </span>
-          <span className="font-bold text-xs capitalize">{mode} FX</span>
-          <span className="material-symbols-outlined text-[14px]">
-            {controlsExpanded ? 'expand_more' : 'tune'}
-          </span>
-        </motion.button>
-      </div>
-    </>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-10 w-full h-full"
+      style={{ mixBlendMode: isLight ? 'multiply' : 'screen' }}
+      aria-hidden="true"
+    />
   );
 };

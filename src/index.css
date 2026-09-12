@@ -124,3 +124,207 @@ html, body {
   opacity: 0.8;
   animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* ==========================================================================
+   LUMINOUS HIGH-TECH LIGHT MODE ("Crazy Attractive" Cyber-Lab Aesthetic)
+   ========================================================================== */
+
+html.light,
+html.light body {
+  background: 
+    radial-gradient(circle at 10% 8%, rgba(2, 132, 199, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(124, 58, 237, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(5, 150, 105, 0.06) 0%, transparent 50%),
+    #f8fafc !important;
+  color: #090d16 !important;
+}
+
+html.light ::selection {
+  background-color: #0284c7;
+  color: #ffffff;
+}
+
+/* Light Mode Header & Shell Navigation with Crystalline Frosted Acrylic */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border-color: rgba(2, 132, 199, 0.16) !important;
+  box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+html.light aside {
+  background-color: rgba(252, 253, 255, 0.94) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border-color: rgba(2, 132, 199, 0.15) !important;
+  box-shadow: 4px 0 24px -4px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light footer {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  border-color: rgba(2, 132, 199, 0.15) !important;
+  box-shadow: 0 -4px 20px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Base Canvas Surfaces mapped to crisp light panels */
+html.light .bg-\[\#090d16\],
+html.light .bg-\[\#070a12\],
+html.light .bg-\[\#05080e\] {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-\[\#0f1624\],
+html.light .bg-\[\#141d2f\] {
+  background-color: #ffffff !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(2, 132, 199, 0.04) !important;
+}
+
+html.light .bg-\[\#1b273e\] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .bg-\[\#243350\] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Holographic and Frosted Glass Cards with Prismatic Edge Hover */
+html.light .glass-card,
+html.light .holo-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 255, 0.90) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(2, 132, 199, 0.18) !important;
+  box-shadow: 
+    0 4px 20px -2px rgba(15, 23, 42, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+    0 1px 3px rgba(2, 132, 199, 0.06) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html.light .glass-card:hover,
+html.light .holo-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 
+    0 20px 40px -10px rgba(2, 132, 199, 0.20),
+    0 0 0 1.5px #0284c7,
+    0 0 22px rgba(2, 132, 199, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.95) inset !important;
+}
+
+/* Light Mode Typography Adjustments for Crisp WCAG AA Contrast */
+html.light .text-\[\#f1f5f9\],
+html.light .text-\[\#ffffff\],
+html.light .text-white {
+  color: #090d16 !important;
+}
+
+html.light .text-\[\#94a3b8\] {
+  color: #334155 !important;
+}
+
+html.light .text-\[\#64748b\] {
+  color: #475569 !important;
+}
+
+html.light .border-\[\#1e293b\],
+html.light .border-\[\#1e293b\]\/60,
+html.light .border-\[\#1e293b\]\/40 {
+  border-color: rgba(2, 132, 199, 0.16) !important;
+}
+
+/* Vibrant High-Tech Accent Adaptation in Light Mode */
+html.light .text-\[\#06b6d4\] {
+  color: #0284c7 !important; /* Electric sapphire cyan for crisp legibility */
+}
+
+html.light .text-\[\#10b981\] {
+  color: #059669 !important; /* Vivid emerald green */
+}
+
+html.light .text-\[\#8b5cf6\] {
+  color: #7c3aed !important; /* Vibrant violet */
+}
+
+html.light .bg-\[\#06b6d4\] {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+html.light .bg-\[\#06b6d4\]\/10,
+html.light .bg-\[\#06b6d4\]\/15 {
+  background-color: rgba(2, 132, 199, 0.12) !important;
+  color: #0284c7 !important;
+}
+
+html.light .bg-\[\#10b981\]\/10,
+html.light .bg-\[\#10b981\]\/15 {
+  background-color: rgba(5, 150, 105, 0.12) !important;
+  color: #059669 !important;
+}
+
+html.light .bg-\[\#8b5cf6\]\/10,
+html.light .bg-\[\#8b5cf6\]\/15 {
+  background-color: rgba(124, 58, 237, 0.12) !important;
+  color: #7c3aed !important;
+}
+
+/* Light Mode Blueprint Micro-Dot Matrix */
+html.light .cyber-grid {
+  background-size: 28px 28px !important;
+  background-image: radial-gradient(circle, rgba(2, 132, 199, 0.16) 1.2px, transparent 1.2px) !important;
+  opacity: 0.65 !important;
+}
+
+/* Ambient glow orbs in Light Mode */
+html.light .ambient-glow-1 {
+  background-color: rgba(14, 165, 233, 0.14) !important;
+}
+html.light .ambient-glow-2 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+/* Light Mode Scrollbars */
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+/* Forms & Inputs in Light Mode */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #090d16 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
+}
+
+/* Modal Dialog backdrop and body in Light Mode */
+html.light .fixed.inset-0.bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Dynamic Text Shimmer in Light Mode */
+html.light .animate-shimmer {
+  background: linear-gradient(90deg, #0284c7 0%, #059669 35%, #7c3aed 70%, #0284c7 100%) !important;
+  background-size: 300% auto !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  animation: textShimmer 6s linear infinite !important;
+}
+

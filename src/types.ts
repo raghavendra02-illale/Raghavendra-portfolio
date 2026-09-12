@@ -1,3 +1,9 @@
+export interface ProjectMetric {
+  label: string;
+  value: string;
+  detail?: string;
+}
+
 export interface Project {
   id: string;
   category: 'genai' | 'aerospace' | 'cloud';
@@ -5,6 +11,13 @@ export interface Project {
   filename: string;
   title: string;
   description: string;
+  shortDescription?: string;
+  detailedDescription?: string;
+  architectureFlow?: string[];
+  keyHighlights?: string[];
+  problemSolved?: string;
+  techStackList?: string[];
+  metricsData?: ProjectMetric[];
   metricLabel: string;
   metricValue: string;
   metricHighlight: string;

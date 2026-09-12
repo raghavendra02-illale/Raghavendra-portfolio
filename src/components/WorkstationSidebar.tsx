@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { NAV_ITEMS, CODING_PROFILES } from '../data/workstationData';
+import { ThemeMode } from '../hooks/useTheme';
+import { PresenceState } from '../hooks/usePresenceStatus';
 
 interface SidebarProps {
   activeSection: string;
@@ -8,6 +10,9 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onShowToast: (msg: string) => void;
+  presence?: PresenceState;
+  theme?: ThemeMode;
+  onThemeChange?: (mode: ThemeMode) => void;
 }
 
 export const WorkstationSidebar: React.FC<SidebarProps> = ({
@@ -16,6 +21,9 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   onShowToast,
+  presence,
+  theme,
+  onThemeChange,
 }) => {
   const handleFullscreenToggle = () => {
     if (!document.fullscreenElement) {
@@ -26,6 +34,9 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
       onShowToast('Exited Fullscreen Mode');
     }
   };
+
+  const isOnline = presence ? presence.status === 'online' : true;
+  const isIdle = presence ? presence.status === 'idle' : false;
 
   return (
     <>
@@ -72,21 +83,30 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
             </span>
             <button
               type="button"
-              className="lg:hidden text-[#64748b] hover:text-[#f1f5f9] p-1"
+              className="lg:hidden text-[#64748b] hover:text-[#f1f5f9] p-1 cursor-pointer"
               onClick={onClose}
             >
               <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
 
-          {/* Identity Profile */}
+          {/* Identity Profile with Live Presence */}
           <div className="my-4 p-3 rounded-xl bg-[#0f1624] border border-[#1e293b]/60 holo-card">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#06b6d4] to-[#8b5cf6] flex items-center justify-center font-display font-black text-sm text-[#090d16] shadow-md ring-1 ring-white/20">
                   RI
                 </div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] absolute -bottom-0.5 -right-0.5 ring-2 ring-[#090d16] status-radar" />
+                <div
+                  className={`w-2.5 h-2.5 rounded-full absolute -bottom-0.5 -right-0.5 ring-2 ring-[#090d16] ${
+                    isOnline
+                      ? 'bg-[#10b981] status-radar'
+                      : isIdle
+                      ? 'bg-[#f59e0b]'
+                      : 'bg-[#ef4444]'
+                  }`}
+                  title={presence?.statusDetail || 'Online'}
+                />
               </div>
               <div className="overflow-hidden">
                 <div className="font-mono text-xs text-[#06b6d4] font-bold truncate">
@@ -97,14 +117,36 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-[#1e293b]/40 flex items-center justify-between font-mono text-[10px] text-[#64748b]">
-              <span className="truncate">ORGANIZATION: LTTS</span>
-              <span className="text-[#10b981] font-bold flex items-center gap-1.5 shrink-0">
+            <div className="mt-2.5 pt-2 border-t border-[#1e293b]/40 flex items-center justify-between font-mono text-[10px]">
+              <span className="text-[#64748b] truncate">ORG: LTTS</span>
+              <span
+                className={`font-bold flex items-center gap-1.5 shrink-0 ${
+                  isOnline
+                    ? 'text-[#10b981]'
+                    : isIdle
+                    ? 'text-[#f59e0b]'
+                    : 'text-[#ef4444]'
+                }`}
+                title={presence?.statusDetail || 'Status Online'}
+              >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]" />
+                  {isOnline && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      isOnline
+                        ? 'bg-[#10b981]'
+                        : isIdle
+                        ? 'bg-[#f59e0b]'
+                        : 'bg-[#ef4444]'
+                    }`}
+                  />
                 </span>
-                ONLINE
+                {presence ? presence.statusLabel : 'ONLINE'}
+                {presence?.pingMs && (
+                  <span className="opacity-70 text-[9px]">({presence.pingMs}ms)</span>
+                )}
               </span>
             </div>
           </div>
@@ -207,8 +249,59 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Sidebar Bottom Status */}
-        <div className="p-3 bg-[#0f1624] border-t border-[#1e293b]/60 flex flex-col gap-1 font-mono text-[11px]">
+        {/* Sidebar Bottom Status & Theme */}
+        <div className="p-3 bg-[#0f1624] border-t border-[#1e293b]/60 flex flex-col gap-2 font-mono text-[11px]">
+          {/* Theme Quick Switcher in Sidebar */}
+          {onThemeChange && (
+            <div className="flex items-center justify-between pb-1 border-b border-[#1e293b]/40">
+              <span className="text-[10px] text-[#64748b]">THEME:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onThemeChange('dark');
+                    onShowToast('Theme set to Dark');
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] cursor-pointer transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#06b6d4] text-[#090d16] font-bold'
+                      : 'text-[#94a3b8] hover:text-[#f1f5f9]'
+                  }`}
+                >
+                  Dark
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onThemeChange('light');
+                    onShowToast('Theme set to Light');
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] cursor-pointer transition-colors ${
+                    theme === 'light'
+                      ? 'bg-[#06b6d4] text-[#090d16] font-bold'
+                      : 'text-[#94a3b8] hover:text-[#f1f5f9]'
+                  }`}
+                >
+                  Light
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onThemeChange('system');
+                    onShowToast('Theme set to Default');
+                  }}
+                  className={`px-1.5 py-0.5 rounded text-[10px] cursor-pointer transition-colors ${
+                    theme === 'system'
+                      ? 'bg-[#06b6d4] text-[#090d16] font-bold'
+                      : 'text-[#94a3b8] hover:text-[#f1f5f9]'
+                  }`}
+                >
+                  Auto
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between text-[#94a3b8]">
             <span>RAM: 14.8 / 64 GB</span>
             <span className="text-[#10b981] font-bold">23%</span>
@@ -219,7 +312,7 @@ export const WorkstationSidebar: React.FC<SidebarProps> = ({
               style={{ width: '23%' }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-[#64748b] pt-1">
+          <div className="flex justify-between text-[10px] text-[#64748b] pt-0.5">
             <span>BATTERY: 100% ⚡</span>
             <span className="text-[#10b981] font-semibold flex items-center gap-1">
               <span className="w-1 h-1 rounded-full bg-[#10b981] animate-ping" />

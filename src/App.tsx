@@ -15,21 +15,26 @@ import { ContactSection } from './components/ContactSection';
 import { StatusFooter } from './components/StatusFooter';
 import { Toast } from './components/Toast';
 import { InteractiveAtmosphere, AtmosphereMode } from './components/InteractiveAtmosphere';
+import { useTheme } from './hooks/useTheme';
+import { usePresenceStatus } from './hooks/usePresenceStatus';
+import {
+  isSoundEnabled,
+  setSoundEnabled,
+  playClickSound,
+  playSuccessSound,
+} from './utils/audioFx';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('about');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastVisible, setToastVisible] = useState<boolean>(false);
-  const [atmosphereMode, setAtmosphereMode] = useState<AtmosphereMode>('bubbles');
+  const [atmosphereMode, setAtmosphereMode] = useState<AtmosphereMode>('circuits');
+  const [soundActive, setSoundActive] = useState<boolean>(() => isSoundEnabled());
 
-  const cycleAtmosphere = useCallback(() => {
-    setAtmosphereMode((prev) => {
-      const next: AtmosphereMode = prev === 'bubbles' ? 'sky' : prev === 'sky' ? 'water' : 'bubbles';
-      showToast(`Atmosphere switched to: ${next.toUpperCase()} FX`);
-      return next;
-    });
-  }, []);
+  // Theme & Live Presence hooks
+  const { theme, setTheme } = useTheme();
+  const presence = usePresenceStatus();
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -40,8 +45,53 @@ export default function App() {
     }, 3200);
   }, []);
 
+  const toggleSound = useCallback(() => {
+    setSoundActive((prev) => {
+      const next = !prev;
+      setSoundEnabled(next);
+      if (next) {
+        playSuccessSound();
+      }
+      showToast(next ? 'Acoustic Sound FX: Enabled' : 'Acoustic Sound FX: Muted');
+      return next;
+    });
+  }, [showToast]);
+
+  const cycleAtmosphere = useCallback(() => {
+    setAtmosphereMode((prev) => {
+      const modes: AtmosphereMode[] = ['circuits', 'radar', 'sky', 'aurora'];
+      const curIdx = modes.indexOf(prev);
+      const next: AtmosphereMode = modes[(curIdx + 1) % modes.length];
+      const labels: Record<AtmosphereMode, string> = {
+        circuits: 'CYBER CIRCUITS',
+        radar: 'TACTICAL RADAR',
+        sky: 'DEEP SKY CONSTELLATIONS',
+        aurora: 'AURORA HARMONIC WAVES',
+      };
+      showToast(`Atmosphere FX switched to: ${labels[next]}`);
+      return next;
+    });
+  }, [showToast]);
+
+  // Global tactile sound on any clickable UI elements (buttons, nav, cards, tabs)
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const isInteractive = target.closest(
+        'button, a, [role="button"], input[type="submit"], input[type="checkbox"], select, .holo-card'
+      );
+      if (isInteractive) {
+        playClickSound();
+      }
+    };
+    document.addEventListener('click', handleGlobalClick, { capture: true });
+    return () => document.removeEventListener('click', handleGlobalClick, { capture: true });
+  }, []);
+
   const copyToClipboard = useCallback(
     (text: string, label: string) => {
+      playSuccessSound();
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard
           .writeText(text)
@@ -130,10 +180,16 @@ export default function App() {
         <div className="absolute -bottom-32 right-[10%] w-[550px] h-[550px] rounded-full bg-[#8b5cf6]/7 blur-[140px] ambient-glow-1" />
       </div>
 
-      {/* Interactive Atmosphere FX (Sky, Water drops, Bubbles, Click/Touch bursts) */}
+      {/* Interactive Technical Canvas (Circuit Mesh, Tactical Radar, Deep Sky, Live Coding) */}
       <InteractiveAtmosphere
         mode={atmosphereMode}
         onModeChange={setAtmosphereMode}
+        isLight={
+          theme === 'light' ||
+          (theme === 'system' &&
+            typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-color-scheme: light)').matches)
+        }
       />
 
       {/* Global Toast Component */}
@@ -146,6 +202,9 @@ export default function App() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onShowToast={showToast}
+        presence={presence}
+        theme={theme}
+        onThemeChange={setTheme}
       />
 
       {/* Main Container Wrapper */}
@@ -157,6 +216,11 @@ export default function App() {
           onShowToast={showToast}
           atmosphereMode={atmosphereMode}
           onCycleAtmosphere={cycleAtmosphere}
+          theme={theme}
+          onThemeChange={setTheme}
+          presence={presence}
+          soundEnabled={soundActive}
+          onToggleSound={toggleSound}
         />
 
         {/* Content Scroll View */}
@@ -185,7 +249,7 @@ export default function App() {
         </main>
 
         {/* Fixed Status Footer */}
-        <StatusFooter />
+        <StatusFooter presence={presence} />
       </div>
     </div>
   );
